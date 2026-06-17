@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.net.URL?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+
+<StackPane styleClass="figma-login-root"
+           xmlns="http://javafx.com/javafx/17"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.example.frontend_emp_pass_slip.controller.LoginController">
+
+    <stylesheets>
+        <URL value="@../css/style.css" />
+    </stylesheets>
+
+    <Pane styleClass="login-bg-circle-top-left"
+          StackPane.alignment="TOP_LEFT" />
+
+    <Pane styleClass="login-bg-circle-bottom-right"
+          StackPane.alignment="BOTTOM_RIGHT" />
+
+    <VBox alignment="CENTER" spacing="26" maxWidth="430">
+
+        <VBox alignment="CENTER" spacing="8">
+            <StackPane styleClass="pup-logo-circle">
+                <ImageView fitWidth="78" fitHeight="78" preserveRatio="true" smooth="true">
+                    <image>
+                        <Image url="@../images/pup-logo.png" />
+                    </image>
+                </ImageView>
+            </StackPane>
+
+            <Label text="Pass Slip System" styleClass="figma-login-title" />
+            <Label text="Employee Issuance &amp; Monitoring" styleClass="figma-login-subtitle" />
+            <Label text="University Administration Portal" styleClass="figma-login-caption" />
+        </VBox>
+
+        <VBox styleClass="figma-login-card" spacing="10" maxWidth="390">
+            <padding>
+                <Insets top="30" right="32" bottom="28" left="32" />
+            </padding>
+
+            <VBox spacing="3">
+                <Label text="Welcome back" styleClass="figma-card-title" />
+                <Label text="Sign in to your administrator account" styleClass="figma-card-subtitle" />
+            </VBox>
+
+            <VBox spacing="6">
+                <Label text="Username *" styleClass="figma-field-label" />
+                <TextField fx:id="usernameField"
+                           promptText="Enter your username"
+                           onAction="#login"
+                           prefHeight="38" />
+            </VBox>
+
+            <VBox spacing="6">
+                <Label text="Password *" styleClass="figma-field-label" />
+                <PasswordField fx:id="passwordField"
+                               promptText="Enter your password"
+                               onAction="#login"
+                               prefHeight="38" />
+            </VBox>
+            <Label fx:id="statusLabel"
+                   wrapText="true"
+                   styleClass="error-label" />
+
+            <Button text="Sign In"
+                    maxWidth="Infinity"
+                    prefHeight="40"
+                    onAction="#login"
+                    styleClass="figma-login-button" />
+
+            <HBox spacing="100" alignment="CENTER_LEFT">
+                <Hyperlink text="Terms and Conditions" onAction="#handleTerms" />
+                <Hyperlink text="Privacy and Policy" onAction="#handlePrivacy" />
+            </HBox>
+        </VBox>
+
+        <Label text="© 2026 University Administration" styleClass="figma-footer-text" />
+
+    </VBox>
+</StackPane>

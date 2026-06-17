@@ -1,0 +1,141 @@
+package backend.app;
+
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.scene.Scene;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
+import javafx.util.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
+
+public class AppSettingsManager {
+    private static AppSettingsManager instance;
+    private final SettingsRepository repository = new SettingsRepository();
+
+    private String timeFormat = "24h";
+    private String dateFormat = "YYYY-MM-DD";
+    private int autoLogoutMinutes = 30;
+
+    private Timeline inactivityTimeline;
+    private Runnable logoutRoutine;
+
+    private AppSettingsManager() {
+        refreshSettings();
+    }
+
+    public static synchronized AppSettingsManager getInstance() {
+        if (instance == null) {
+            instance = new AppSettingsManager();
+        }
+        return instance;
+    }
+
+    // Load or refresh data directly from DB cache
+    public void refreshSettings() {
+        Map<String, String> settings = repository.loadSettings();
+        this.timeFormat = settings.getOrDefault("time_format", "24h");
+        this.dateFormat = settings.getOrDefault("date_format", "YYYY-MM-DD");
+        try {
+            this.autoLogoutMinutes = Integer.parseInt(settings.getOrDefault("auto_logout_minutes", "30"));
+        } catch (NumberFormatException e) {
+            this.autoLogoutMinutes = 30;
+        }
+
+        // If a window is currently active, reset the timer to apply the new duration limit immediately
+        if (inactivityTimeline != null) {
+            resetTimer();
+        }
+    }
+
+    // --- GLOBAL FORMATTING HELPERS ---
+    public DateTimeFormatter getDateFormatter() {
+        switch (dateFormat) {
+            case "DD/MM/YYYY": return DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            case "MM/DD/YYYY": return DateTimeFormatter.ofPattern("MM/dd/yyyy");
+            default: return DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        }
+    }
+
+    public DateTimeFormatter getTimeFormatter() {
+        return timeFormat.equals("12h") ? DateTimeFormatter.ofPattern("hh:mm a") : DateTimeFormatter.ofPattern("HH:mm");
+    }
+
+    public String formatDateTime(LocalDateTime dateTime) {
+        if (dateTime == null) return "";
+        String pattern = dateFormat.replace("YYYY", "yyyy").replace("DD", "dd") + " " + (timeFormat.equals("12h") ? "hh:mm a" : "HH:mm");
+        return dateTime.format(DateTimeFormatter.ofPattern(pattern));
+    }
+    public String formatDate(LocalDate date) {
+        if (date == null) return "";
+        return date.format(getDateFormatter());
+    }
+
+    public String formatTime(LocalTime time) {
+        if (time == null) return "";
+        return time.format(getTimeFormatter());
+    }
+    // --- GLOBAL AUTO-LOGOUT MECHANISM ---
+    public void registerInactivityTracker(Scene scene, Runnable onLogoutAction) {
+        this.logoutRoutine = onLogoutAction;
+
+        if (inactivityTimeline != null) {
+            inactivityTimeline.stop();
+        }
+
+        // Configure dynamic trigger countdown duration
+        inactivityTimeline = new Timeline(new KeyFrame(Duration.minutes(autoLogoutMinutes), event -> {
+            System.out.println("User inactivity limit reached. Initiating auto-logout.");
+            if (logoutRoutine != null) {
+                logoutRoutine.run();
+            }
+        }));
+        inactivityTimeline.setCycleCount(1);
+        inactivityTimeline.play();
+
+        // Listen for ANY user interactions on this Window/Scene context
+        scene.addEventFilter(MouseEvent.ANY, event -> resetTimer());
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> resetTimer());
+    }
+
+    private void resetTimer() {
+        if (inactivityTimeline != null) {
+            inactivityTimeline.stop();
+            inactivityTimeline.playFromStart();
+        }
+    }
+
+    public void stopTracker() {
+        if (inactivityTimeline != null) {
+            inactivityTimeline.stop();
+        }
+    }
+    // --- STRING PARSING HELPERS ---
+    public String formatDateString(String dbDate) {
+        if (dbDate == null || dbDate.isEmpty() || dbDate.equalsIgnoreCase("null")) return "";
+        try {
+            // Strip out time if the DB accidentally includes it in a date field
+            if (dbDate.contains(" ")) dbDate = dbDate.split(" ")[0];
+            return formatDate(LocalDate.parse(dbDate));
+        } catch (Exception e) {
+            return dbDate; // Fallback to raw string if parsing fails
+        }
+    }
+
+    public String formatTimeString(String dbTime) {
+        if (dbTime == null || dbTime.isEmpty() || dbTime.equalsIgnoreCase("null")) return "";
+        try {
+            return formatTime(LocalTime.parse(dbTime));
+        } catch (Exception e) {
+            return dbTime; // Fallback to raw string if parsing fails
+        }
+    }
+    // Returns the auto-logout time in minutes. Defaulting to 1 for testing!
+    public int getAutoLogoutTimer() {
+        // This now returns the actual value loaded from your DB during refreshSettings()
+        return this.autoLogoutMinutes;
+    }
+}
