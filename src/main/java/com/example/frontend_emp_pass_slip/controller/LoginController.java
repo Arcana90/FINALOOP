@@ -189,6 +189,42 @@ public class LoginController {
     private void handleTerms() {
         System.out.println("Terms and Conditions clicked");
         showTextDialog(
+                "Terms and Conditions",
+                "Terms and Conditions — Pass Slip System",
+                "1. ACCEPTANCE OF TERMS\n"
+                        + "By using this system, you agree to be bound by these Terms and Conditions. "
+                        + "Unauthorized access or use of this system is strictly prohibited.\n\n"
+                        + "2. AUTHORIZED USE\n"
+                        + "This system is intended solely for authorized personnel of the organization "
+                        + "for the purpose of managing employee pass slips and monitoring employee "
+                        + "time-in and time-out records.\n\n"
+                        + "3. ACCURACY OF INFORMATION\n"
+                        + "Users are responsible for the accuracy and completeness of all data entered "
+                        + "into the system. Falsification of records may result in disciplinary action.\n\n"
+                        + "4. ACCOUNT SECURITY\n"
+                        + "Users must keep their login credentials confidential. You are responsible for "
+                        + "all activities that occur under your account. Report any unauthorized access "
+                        + "to the system administrator immediately.\n\n"
+                        + "5. DATA OWNERSHIP\n"
+                        + "All data entered into this system remains the property of the organization. "
+                        + "Users must not export, copy, or distribute system data without prior written "
+                        + "authorization from management.\n\n"
+                        + "6. MODIFICATIONS\n"
+                        + "The organization reserves the right to modify these Terms and Conditions at "
+                        + "any time. Continued use of the system constitutes acceptance of any changes.\n\n"
+                        + "7. TERMINATION\n"
+                        + "Access to this system may be revoked at any time at the discretion of the "
+                        + "system administrator or management, with or without notice.\n\n"
+                        + "By logging in, you confirm that you have read, understood, and agree to "
+                        + "these Terms and Conditions."
+
+        );
+    }
+
+    @FXML
+    private void handlePrivacy() {
+        System.out.println("Privacy and Policy clicked");
+        showTextDialog(
                 "Privacy Policy",
                 "Privacy Policy — Pass Slip System",
                 "EFFECTIVE DATE: January 1, 2025\n\n"
@@ -222,41 +258,6 @@ public class LoginController {
                         + "7. CONTACT\n"
                         + "For questions or concerns regarding this Privacy Policy, please contact "
                         + "your system administrator or HR representative."
-        );
-    }
-
-    @FXML
-    private void handlePrivacy() {
-        System.out.println("Privacy and Policy clicked");
-        showTextDialog(
-                "Terms and Conditions",
-                "Terms and Conditions — Pass Slip System",
-                "1. ACCEPTANCE OF TERMS\n"
-                        + "By using this system, you agree to be bound by these Terms and Conditions. "
-                        + "Unauthorized access or use of this system is strictly prohibited.\n\n"
-                        + "2. AUTHORIZED USE\n"
-                        + "This system is intended solely for authorized personnel of the organization "
-                        + "for the purpose of managing employee pass slips and monitoring employee "
-                        + "time-in and time-out records.\n\n"
-                        + "3. ACCURACY OF INFORMATION\n"
-                        + "Users are responsible for the accuracy and completeness of all data entered "
-                        + "into the system. Falsification of records may result in disciplinary action.\n\n"
-                        + "4. ACCOUNT SECURITY\n"
-                        + "Users must keep their login credentials confidential. You are responsible for "
-                        + "all activities that occur under your account. Report any unauthorized access "
-                        + "to the system administrator immediately.\n\n"
-                        + "5. DATA OWNERSHIP\n"
-                        + "All data entered into this system remains the property of the organization. "
-                        + "Users must not export, copy, or distribute system data without prior written "
-                        + "authorization from management.\n\n"
-                        + "6. MODIFICATIONS\n"
-                        + "The organization reserves the right to modify these Terms and Conditions at "
-                        + "any time. Continued use of the system constitutes acceptance of any changes.\n\n"
-                        + "7. TERMINATION\n"
-                        + "Access to this system may be revoked at any time at the discretion of the "
-                        + "system administrator or management, with or without notice.\n\n"
-                        + "By logging in, you confirm that you have read, understood, and agree to "
-                        + "these Terms and Conditions."
         );
 
     }

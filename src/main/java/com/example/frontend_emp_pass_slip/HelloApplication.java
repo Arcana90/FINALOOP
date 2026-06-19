@@ -32,13 +32,10 @@ public class HelloApplication extends Application {
     }
 
     private void initializeDatabase() {
-        String url = System.getenv("SUPABASE_DB_URL");
-        String user = System.getenv("SUPABASE_DB_USER");
-        String password = System.getenv("SUPABASE_DB_PASSWORD");
-
-        if (url == null || user == null || password == null) {
-            throw new IllegalStateException("Missing Supabase environment variables.");
-        }
+        // Hardcoded credentials for zero-setup portability
+        String url = "jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres?sslmode=require";
+        String user = "postgres.eoncagaaagkhzpltkxuu";
+        String password = "PS_dataBase_13";
 
         ConnectionPoolManager.initialize(url, user, password, 3);
         System.out.println("Database pool initialized successfully.");
