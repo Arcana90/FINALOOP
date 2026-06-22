@@ -8,25 +8,21 @@ import java.sql.ResultSet;
 
 public class PassSlipJdbcRepository {
 
-    public IssuePassSlipResult issuePassSlip(String employeeId, String reason, int issuedByUserId) {
+    public IssuePassSlipResult issuePassSlip(String employeeId, String reason, int issuedByUserId, String timeRequested) {
         Connection connection = null;
 
+        // FIXED: Added time_requested to the columns and values
         String sql = """
             INSERT INTO pass_slips (
                 employee_id,
                 reason_for_leaving,
                 date_issued,
-                time_out,
+                time_requested,
                 status,
                 issued_by_user_id
             )
             VALUES (
-                ?,
-                ?,
-                CURRENT_DATE,
-                (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time,
-                'Out'::slip_status,
-                ?
+                ?, ?, CURRENT_DATE, ?, 'For Approval'::slip_status, ?
             )
             RETURNING pass_slip_id
             """;
@@ -34,17 +30,19 @@ public class PassSlipJdbcRepository {
         try {
             connection = ConnectionPoolManager.getInstance().acquire();
 
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, employeeId);
-                statement.setString(2, reason);
-                statement.setInt(3, issuedByUserId);
+            // FIXED: Using 'stmt' consistently
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setString(1, employeeId);
+                stmt.setString(2, reason);
+                stmt.setString(3, timeRequested); // time_requested column
+                stmt.setInt(4, issuedByUserId);   // issued_by_user_id column
 
-                try (ResultSet resultSet = statement.executeQuery()) {
+                // Use executeQuery() because we have a 'RETURNING' clause in the SQL
+                try (ResultSet resultSet = stmt.executeQuery()) {
                     if (resultSet.next()) {
                         return IssuePassSlipResult.success(resultSet.getInt("pass_slip_id"));
                     }
                 }
-
                 return IssuePassSlipResult.failed("Pass slip was not created.");
             }
 

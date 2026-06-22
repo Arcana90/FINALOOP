@@ -14,24 +14,23 @@ public class MonitoringJdbcRepository {
         List<PassSlipMonitoringRecord> records = new ArrayList<>();
         Connection connection = null;
 
-        // ADDED: ps.time_requested to the SELECT query
         String sql = """
-                SELECT 
-                    ps.pass_slip_id,
-                    ps.employee_id,
-                    e.first_name || ' ' || e.last_name AS employee_name,
-                    e.department,
-                    ps.reason_for_leaving,
-                    ps.date_issued,
-                    ps.time_requested,
-                    ps.time_out,
-                    ps.time_in,
-                    ps.duration_minutes,
-                    ps.status::text AS status
-                FROM pass_slips ps
-                JOIN employees e ON ps.employee_id = e.employee_id
-                ORDER BY ps.pass_slip_id DESC
-                """;
+            SELECT 
+                ps.pass_slip_id,
+                ps.employee_id,
+                e.first_name || ' ' || e.last_name AS employee_name,
+                e.department,
+                ps.reason_for_leaving,
+                ps.date_issued,
+                ps.time_requested,  -- FETCHING THE NEW COLUMN
+                ps.time_out,        -- FETCHING THE GUARD'S COLUMN
+                ps.time_in,
+                ps.duration_minutes,
+                ps.status::text AS status
+            FROM pass_slips ps
+            JOIN employees e ON ps.employee_id = e.employee_id
+            ORDER BY ps.pass_slip_id DESC
+            """;
 
         try {
             connection = ConnectionPoolManager.getInstance().acquire();
@@ -44,11 +43,10 @@ public class MonitoringJdbcRepository {
                     String reason = resultSet.getString("reason_for_leaving");
                     Integer durationMinutes = (Integer) resultSet.getObject("duration_minutes");
 
-                    // FETCH the new field from the database
+                    // Get both times from the database
                     String timeRequested = resultSet.getString("time_requested");
+                    String timeOutValue = resultSet.getString( "time_out");
 
-                    // ADD timeRequested into the constructor
-                    // Inside while(resultSet.next())
                     records.add(new PassSlipMonitoringRecord(
                             passSlipId,
                             "PS-" + passSlipId,
@@ -56,8 +54,11 @@ public class MonitoringJdbcRepository {
                             resultSet.getString("employee_name"),
                             resultSet.getString("department"),
                             String.valueOf(resultSet.getDate("date_issued")),
-                            resultSet.getString("time_requested"), // <--- THIS MUST BE HERE
+
+                            // Pass them both correctly here
+                            formatTime(resultSet.getString("time_requested")),
                             formatTime(resultSet.getString("time_out")),
+                            // 2. Time Out (Guard's field)
                             formatTime(resultSet.getString("time_in")),
                             formatDuration(durationMinutes),
                             extractType(reason),
@@ -65,7 +66,6 @@ public class MonitoringJdbcRepository {
                     ));
                 }
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

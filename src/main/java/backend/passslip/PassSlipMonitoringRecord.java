@@ -32,8 +32,6 @@ public class PassSlipMonitoringRecord {
         this.status = status;
     }
 
-    public String getTimeRequested() { return timeRequested; }
-
     public int getPassSlipId() {
         return passSlipId;
     }
@@ -77,4 +75,6 @@ public class PassSlipMonitoringRecord {
     public String getStatus() {
         return status;
     }
+    public String getTimeRequested() {return this.timeRequested;}
+
 }

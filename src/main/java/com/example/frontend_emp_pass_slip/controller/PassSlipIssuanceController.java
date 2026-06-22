@@ -49,6 +49,7 @@ public class PassSlipIssuanceController {
         fillEmployee(employeeComboBox.getValue());
     }
 
+
     private void setupEmployeeComboBox() {
         List<Employee> activeEmployees = employeeRepository.findAvailableForIssuance()
                 .stream()
@@ -136,6 +137,7 @@ public class PassSlipIssuanceController {
     private void issuePassSlip() {
         Employee selectedEmployee = employeeComboBox.getValue();
 
+
         if (selectedEmployee == null) {
             showStatus("Please select an employee.", true);
             return;
@@ -194,14 +196,17 @@ public class PassSlipIssuanceController {
         String finalReason = buildReason(passType, destination, reason)
                 + " | Est. Out: " + formattedTimeOut + " | Est. In: " + formattedTimeIn;
 
+        java.time.LocalTime now = java.time.LocalTime.now(java.time.ZoneId.of("Asia/Manila"));
+        String currentTimeRequested = now.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+
         int issuedByUserId = 1; // Temporary ID
 
         IssuePassSlipResult result = passSlipRepository.issuePassSlip(
                 selectedEmployee.getEmployeeId(),
                 finalReason,
-                issuedByUserId
+                issuedByUserId,
+                currentTimeRequested // <--- Pass the real time here
         );
-
         if (result.isSuccess()) {
             showStatus("Pass slip issued for " + selectedEmployee.getFullName() + ". Slip ID: " + result.getPassSlipId(), false);
             clearForm();
