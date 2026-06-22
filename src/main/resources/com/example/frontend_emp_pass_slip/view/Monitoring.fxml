@@ -65,7 +65,6 @@
                 <TableColumn fx:id="timeRequestedColumn" text="Time Requested" prefWidth="120" />
                 <TableColumn fx:id="timeOutColumn" text="Time Out" prefWidth="92" />
                 <TableColumn fx:id="timeInColumn" text="Time In" prefWidth="110" />
-                <TableColumn fx:id="durationColumn" text="Duration" prefWidth="90" />
                 <TableColumn fx:id="statusColumn" text="Status" prefWidth="85" />
                 <TableColumn fx:id="actionColumn" text="Action" prefWidth="100" />
             </columns>

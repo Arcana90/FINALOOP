@@ -10,28 +10,43 @@ import javafx.scene.control.*;
 import javafx.util.StringConverter;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 public class PassSlipIssuanceController {
 
-    @FXML private ComboBox<Employee> employeeComboBox;
-    @FXML private ComboBox<String> passTypeComboBox;
-    @FXML private TextField departmentField;
-    @FXML private TextField positionField;
-    @FXML private TextField supervisorField;
-    @FXML private TextField destinationField;
-    @FXML private TextArea reasonTextArea;
+    @FXML
+    private ComboBox<Employee> employeeComboBox;
+    @FXML
+    private ComboBox<String> passTypeComboBox;
+    @FXML
+    private TextField departmentField;
+    @FXML
+    private TextField positionField;
+    @FXML
+    private TextField supervisorField;
+    @FXML
+    private TextField destinationField;
+    @FXML
+    private TextArea reasonTextArea;
 
     // Split Time Fields
-    @FXML private TextField outHourField;
-    @FXML private TextField outMinuteField;
-    @FXML private ComboBox<String> timeOutAmPmComboBox;
+    @FXML
+    private TextField outHourField;
+    @FXML
+    private TextField outMinuteField;
+    @FXML
+    private ComboBox<String> timeOutAmPmComboBox;
 
-    @FXML private TextField inHourField;
-    @FXML private TextField inMinuteField;
-    @FXML private ComboBox<String> timeInAmPmComboBox;
+    @FXML
+    private TextField inHourField;
+    @FXML
+    private TextField inMinuteField;
+    @FXML
+    private ComboBox<String> timeInAmPmComboBox;
 
-    @FXML private Label statusLabel;
+    @FXML
+    private Label statusLabel;
 
     private final EmployeeRepository employeeRepository = new EmployeeRepository();
     private final PassSlipJdbcRepository passSlipRepository = new PassSlipJdbcRepository();
@@ -49,7 +64,6 @@ public class PassSlipIssuanceController {
         fillEmployee(employeeComboBox.getValue());
     }
 
-
     private void setupEmployeeComboBox() {
         List<Employee> activeEmployees = employeeRepository.findAvailableForIssuance()
                 .stream()
@@ -64,8 +78,11 @@ public class PassSlipIssuanceController {
                 if (employee == null) return "";
                 return employee.getFullName() + " (" + employee.getEmployeeId() + ")";
             }
+
             @Override
-            public Employee fromString(String string) { return null; }
+            public Employee fromString(String string) {
+                return null;
+            }
         });
 
         if (activeEmployees.isEmpty()) {
@@ -107,7 +124,7 @@ public class PassSlipIssuanceController {
         addPaddingFocusListener(inHourField);
         addPaddingFocusListener(inMinuteField);
 
-        // NEW: Auto-Tab logic. When a box hits 2 characters, jump to the next logical input.
+        // Auto-Tab logic. When a box hits 2 characters, jump to the next logical input.
         setupAutoTab(outHourField, outMinuteField);
         setupAutoTab(outMinuteField, timeOutAmPmComboBox);
 
@@ -115,7 +132,7 @@ public class PassSlipIssuanceController {
         setupAutoTab(inMinuteField, timeInAmPmComboBox);
     }
 
-    // NEW Helper: Automatically moves focus to the next control when 2 digits are typed
+    // Automatically moves focus to the next control when 2 digits are typed
     private void setupAutoTab(TextField current, Control next) {
         current.textProperty().addListener((obs, oldText, newText) -> {
             if (newText != null && newText.length() == 2 && (oldText == null || oldText.length() < 2)) {
@@ -137,7 +154,6 @@ public class PassSlipIssuanceController {
     private void issuePassSlip() {
         Employee selectedEmployee = employeeComboBox.getValue();
 
-
         if (selectedEmployee == null) {
             showStatus("Please select an employee.", true);
             return;
@@ -154,84 +170,100 @@ public class PassSlipIssuanceController {
 
         // Validations
         if (destination.isBlank()) {
-            showStatus("Destination is required.", true); return;
+            showStatus("Destination is required.", true);
+            return;
         }
         if (reason.isBlank()) {
-            showStatus("Reason / nature of pass is required.", true); return;
+            showStatus("Reason / nature of pass is required.", true);
+            return;
         }
         if (outHH.isBlank() || outMM.isBlank() || inHH.isBlank() || inMM.isBlank()) {
-            showStatus("Please fill out all time fields completely.", true); return;
+            showStatus("Please fill out all time fields completely.", true);
+            return;
         }
+
+        int outHourInt, outMinInt, inHourInt, inMinInt;
 
         // Validate time ranges and working hours
         try {
-            int outHourInt = Integer.parseInt(outHH);
-            int outMinInt = Integer.parseInt(outMM);
-            int inHourInt = Integer.parseInt(inHH);
-            int inMinInt = Integer.parseInt(inMM);
+            outHourInt = Integer.parseInt(outHH);
+            outMinInt = Integer.parseInt(outMM);
+            inHourInt = Integer.parseInt(inHH);
+            inMinInt = Integer.parseInt(inMM);
 
             if (outHourInt < 1 || outHourInt > 12 || inHourInt < 1 || inHourInt > 12) {
-                showStatus("Hours must be between 01 and 12.", true); return;
+                showStatus("Hours must be between 01 and 12.", true);
+                return;
             }
             if (outMinInt < 0 || outMinInt > 59 || inMinInt < 0 || inMinInt > 59) {
-                showStatus("Minutes must be between 00 and 59.", true); return;
+                showStatus("Minutes must be between 00 and 59.", true);
+                return;
             }
 
-            // NEW: Working hours validation (8:00 AM to 9:00 PM)
+            // Working hours validation (8:00 AM to 9:00 PM)
             if (!isWithinWorkingHours(outHourInt, outMinInt, timeOutAmPmComboBox.getValue())) {
-                showStatus("Estimated Time Out must be between 08:00 AM and 09:00 PM.", true); return;
+                showStatus("Estimated Time Out must be between 08:00 AM and 09:00 PM.", true);
+                return;
             }
             if (!isWithinWorkingHours(inHourInt, inMinInt, timeInAmPmComboBox.getValue())) {
-                showStatus("Estimated Time In must be between 08:00 AM and 09:00 PM.", true); return;
+                showStatus("Estimated Time In must be between 08:00 AM and 09:00 PM.", true);
+                return;
             }
 
         } catch (NumberFormatException e) {
-            showStatus("Invalid numbers in time fields.", true); return;
+            showStatus("Invalid numbers in time fields.", true);
+            return;
         }
 
-        // Combine into final string format
-        String formattedTimeOut = String.format("%02d:%02d %s", Integer.parseInt(outHH), Integer.parseInt(outMM), timeOutAmPmComboBox.getValue());
-        String formattedTimeIn = String.format("%02d:%02d %s", Integer.parseInt(inHH), Integer.parseInt(inMM), timeInAmPmComboBox.getValue());
+        // 1. Generate user-friendly strings for the combined text column
+        String formattedTimeOut = String.format("%02d:%02d %s", outHourInt, outMinInt, timeOutAmPmComboBox.getValue());
+        String formattedTimeIn = String.format("%02d:%02d %s", inHourInt, inMinInt, timeInAmPmComboBox.getValue());
 
         String finalReason = buildReason(passType, destination, reason)
                 + " | Est. Out: " + formattedTimeOut + " | Est. In: " + formattedTimeIn;
 
-        java.time.LocalTime now = java.time.LocalTime.now(java.time.ZoneId.of("Asia/Manila"));
-        String currentTimeRequested = now.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+        // 2. Convert AM/PM inputs into clean 24-Hour strings ("HH:mm") for PostgreSQL columns
+        int out24Hour = outHourInt;
+        if ("AM".equals(timeOutAmPmComboBox.getValue()) && outHourInt == 12) out24Hour = 0;
+        else if ("PM".equals(timeOutAmPmComboBox.getValue()) && outHourInt < 12) out24Hour += 12;
+        String dbExpectedTimeOut = String.format("%02d:%02d", out24Hour, outMinInt);
+
+        int in24Hour = inHourInt;
+        if ("AM".equals(timeInAmPmComboBox.getValue()) && inHourInt == 12) in24Hour = 0;
+        else if ("PM".equals(timeInAmPmComboBox.getValue()) && inHourInt < 12) in24Hour += 12;
+        String dbExpectedTimeIn = String.format("%02d:%02d", in24Hour, inMinInt);
 
         int issuedByUserId = 1; // Temporary ID
 
+        // 3. Make the repository call with matching parameters
         IssuePassSlipResult result = passSlipRepository.issuePassSlip(
                 selectedEmployee.getEmployeeId(),
                 finalReason,
                 issuedByUserId,
-                currentTimeRequested // <--- Pass the real time here
+                dbExpectedTimeOut, // Passes clean 24h format to expected_time_out
+                dbExpectedTimeIn   // Passes clean 24h format to expected_time_in
         );
+
+        // 4. Handle UI Responses cleanly
         if (result.isSuccess()) {
             showStatus("Pass slip issued for " + selectedEmployee.getFullName() + ". Slip ID: " + result.getPassSlipId(), false);
-            clearForm();
-            setupEmployeeComboBox();
-        } else {
-            showStatus(result.getErrorMessage(), true);
-        }
-        if (result.isSuccess()) {
-            // 1. Show the success Alert
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Success");
-            alert.setHeaderText("Pass Slip Issued Successfully");
-            alert.setContentText("The pass slip for " + selectedEmployee.getFullName()
-                    + " has been recorded. (Slip ID: " + result.getPassSlipId() + ")");
-            alert.showAndWait();
 
-            // 2. Clear the form after the user closes the alert
-            clearForm();
+            Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+            successAlert.setTitle("Success");
+            successAlert.setHeaderText("Pass Slip Issued Successfully");
+            successAlert.setContentText("The pass slip for " + selectedEmployee.getFullName()
+                    + " has been recorded. (Slip ID: " + result.getPassSlipId() + ")");
+            successAlert.showAndWait();
+
+            // Clear form manually here to reset fields on success
+            resetFormFields();
             setupEmployeeComboBox();
         } else {
             showStatus(result.getErrorMessage(), true);
         }
     }
 
-    // NEW Helper: Checks if the time is between 8:00 AM and 9:00 PM
+    // Helper: Checks if the time is between 8:00 AM and 9:00 PM
     private boolean isWithinWorkingHours(int hour12, int minutes, String amPm) {
         int hour24 = hour12;
 
@@ -256,6 +288,20 @@ public class PassSlipIssuanceController {
 
     @FXML
     private void clearForm() {
+        // Confirmation dialog for canceling/clearing registration
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirm Action");
+        alert.setHeaderText("Cancel Pass Slip Registration");
+        alert.setContentText("Are you sure you want to cancel this employee's pass slip request?");
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            resetFormFields();
+        }
+    }
+
+    // Extracted helper method to clean up and reset form fields
+    private void resetFormFields() {
         employeeComboBox.getSelectionModel().clearSelection();
         departmentField.clear();
         positionField.clear();

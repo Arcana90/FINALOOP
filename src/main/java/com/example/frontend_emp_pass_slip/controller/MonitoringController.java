@@ -34,7 +34,6 @@ public class MonitoringController {
     @FXML private TextField searchField;
     @FXML private ComboBox<String> statusFilter;
     @FXML private Label countLabel;
-
     @FXML private TableView<PassSlipMonitoringRecord> monitoringTable;
     @FXML private TableColumn<PassSlipMonitoringRecord, String> slipNoColumn;
     @FXML private TableColumn<PassSlipMonitoringRecord, String> employeeIdColumn;
@@ -46,7 +45,6 @@ public class MonitoringController {
     @FXML private TableColumn<PassSlipMonitoringRecord, String> timeRequestedColumn;
     @FXML private TableColumn<PassSlipMonitoringRecord, String> timeOutColumn;
     @FXML private TableColumn<PassSlipMonitoringRecord, String> timeInColumn;
-    @FXML private TableColumn<PassSlipMonitoringRecord, String> durationColumn;
     @FXML private TableColumn<PassSlipMonitoringRecord, String> statusColumn;
 
     // ACTION COLUMN
@@ -75,13 +73,12 @@ public class MonitoringController {
         employeeIdColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getEmployeeId()));
         nameColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getName()));
         departmentColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getDepartment()));
-        durationColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getDuration()));
+        // Removed durationColumn mapping
         statusColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getStatus()));
 
         dateColumn.setCellValueFactory(data ->
                 new ReadOnlyStringWrapper(AppSettingsManager.getInstance().formatDateString(data.getValue().getDate())));
 
-        // NEW: Time Requested Formatter
         timeRequestedColumn.setCellValueFactory(data ->
                 new ReadOnlyStringWrapper(AppSettingsManager.getInstance().formatTimeString(data.getValue().getTimeRequested())));
 
@@ -91,51 +88,60 @@ public class MonitoringController {
         timeInColumn.setCellValueFactory(data ->
                 new ReadOnlyStringWrapper(AppSettingsManager.getInstance().formatTimeString(data.getValue().getTimeIn())));
 
-        // NEW: Dynamic Action Column (Renders the Approve Button)
+        // UPDATED: Action Column (Renders the Cancel Button)
+// UPDATED: Action Column (Renders the Cancel Button - Filter Proof!)
         actionColumn.setCellFactory(param -> new TableCell<>() {
-            private final Button approveBtn = new Button("Approve");
+            private final Button cancelBtn = new Button("Cancel");
 
             {
-                // Basic styling to make it look like a success action
-                approveBtn.setStyle("-fx-background-color: #10b981; -fx-text-fill: white; -fx-cursor: hand;");
-                approveBtn.setOnAction(event -> {
-                    PassSlipMonitoringRecord record = getTableView().getItems().get(getIndex());
-                    handleApproval(record);
+                // Styling it red for danger/cancel action
+                cancelBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-cursor: hand;");
+                cancelBtn.setOnAction(event -> {
+                    // FIX 1: Get the item directly from the row, not the table index
+                    if (getTableRow() != null && getTableRow().getItem() != null) {
+                        PassSlipMonitoringRecord record = (PassSlipMonitoringRecord) getTableRow().getItem();
+                        handleCancellation(record);
+                    }
                 });
             }
 
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
+
+                // FIX 2: Strict null checking for empty rows during filtering
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
                     setGraphic(null);
                 } else {
-                    PassSlipMonitoringRecord record = getTableView().getItems().get(getIndex());
-                    // ONLY show the button if the status is strictly "For Approval"
+                    PassSlipMonitoringRecord record = (PassSlipMonitoringRecord) getTableRow().getItem();
+
+                    // ONLY show the button if the status is "For Approval"
                     if ("For Approval".equalsIgnoreCase(record.getStatus())) {
-                        setGraphic(approveBtn);
+                        setGraphic(cancelBtn);
                     } else {
-                        setGraphic(null);
+                        setGraphic(null); // Explicitly clear it for other statuses
                     }
                 }
             }
         });
     }
 
-    private void handleApproval(PassSlipMonitoringRecord record) {
+    private void handleCancellation(PassSlipMonitoringRecord record) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Approve Pass Slip");
-        confirm.setHeaderText("Approve Pass Slip: " + record.getSlipNo());
-        confirm.setContentText("Are you sure you want to approve this pass slip for " + record.getName() + "?\n\nThis will record their Time Out as exactly right now.");
+        confirm.setTitle("Cancel Pass Slip");
+        confirm.setHeaderText("Cancel Pass Slip: " + record.getSlipNo());
+        confirm.setContentText("Are you sure you want to cancel this pass slip request for " + record.getName() + "?\n\nThis action cannot be undone.");
 
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                boolean success = monitoringRepository.approvePassSlip(record.getPassSlipId(), record.getEmployeeId());
+                // Call the repository to cancel it in the database
+                boolean success = monitoringRepository.cancelPassSlip(record.getPassSlipId());
+
                 if (success) {
-                    showInfo("Approved", "Pass slip approved. Time out recorded.");
+                    showInfo("Cancelled", "Pass slip request cancelled successfully.");
                     loadRecordsFromDatabase();
                 } else {
-                    showError("Error", "Failed to approve pass slip.");
+                    showError("Error", "Failed to cancel pass slip.");
                 }
             }
         });
@@ -144,7 +150,7 @@ public class MonitoringController {
     private void setupFilters() {
         // ADDED: "For Approval" to the filter dropdown
         statusFilter.setItems(FXCollections.observableArrayList(
-                "All Status", "For Approval", "Out", "Returned"
+                "All Status", "For Approval", "Out", "Returned", "Cancelled"
         ));
 
         statusFilter.getSelectionModel().selectFirst();

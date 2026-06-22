@@ -24,7 +24,6 @@ public class MainLayoutController {
     @FXML private Label pageTitleLabel;
 
     // 👇 1. ADD ALL SIDEBAR TOGGLE BUTTONS HERE 👇
-    // (Make sure these fx:id names match your FXML file exactly)
     @FXML private ToggleButton dashboardButton;
     @FXML private ToggleButton employeeButton;
     @FXML private ToggleButton passSlipButton;
@@ -40,11 +39,11 @@ public class MainLayoutController {
         updateActiveSidebarButton(dashboardButton);
         loadDashboard();
 
-        // 👈 NEW: Apply Role-Based Access Control
+        // 👈 Apply Role-Based Access Control
         applyRolePermissions();
     }
 
-    // 👇 NEW: Helper method to hide buttons based on role 👇
+    // 👇 Helper method to hide buttons based on role 👇
     private void applyRolePermissions() {
         String role = backend.auth.SessionManager.getInstance().getCurrentUserRole();
 
@@ -52,14 +51,13 @@ public class MainLayoutController {
 
         switch (role) {
             case "Director":
-            case "Directors": // 👈 Handles the plural DB string match
+            case "Directors":
                 hideButton(employeeButton);
                 hideButton(passSlipButton);
-
                 break;
 
             case "Guard":
-            case "Guards": // 👈 Handles the plural DB string match
+            case "Guards":
                 hideButton(employeeButton);
                 hideButton(passSlipButton);
                 hideButton(reportsButton);
@@ -75,7 +73,7 @@ public class MainLayoutController {
         }
     }
 
-    // 👇 NEW: Helper method to cleanly remove a button from the UI 👇
+    // 👇 Helper method to cleanly remove a button from the UI 👇
     private void hideButton(ToggleButton button) {
         if (button != null) {
             button.setVisible(false);
@@ -88,47 +86,71 @@ public class MainLayoutController {
         loadView("Dashboard.fxml");
         updateHeaderStats();
         mainRoot.setUserData(this);
-        updateActiveSidebarButton(dashboardButton); // 👈 Update selection
+        updateActiveSidebarButton(dashboardButton);
     }
 
     public void loadEmployeeMgmt() {
         setPageTitle("Employee Management");
         loadView("EmployeeManagement.fxml");
-        updateActiveSidebarButton(employeeButton); // 👈 Changed to employeeButton
+        updateActiveSidebarButton(employeeButton);
     }
 
     public void loadPassSlip() {
         setPageTitle("Pass Slip Issuance");
         loadView("PassSlipIssuance.fxml");
         updateHeaderStats();
-        updateActiveSidebarButton(passSlipButton); // 👈 Update selection (FIXES QUICK ACTION BUG!)
+        updateActiveSidebarButton(passSlipButton);
     }
 
+    // 👇 UPDATED: Role-Based Sub-Routing for Monitoring 👇
     public void loadMonitoring() {
         setPageTitle("Monitoring");
-        loadView("Monitoring.fxml");
+
+        // Fetch the user's role
+        String role = backend.auth.SessionManager.getInstance().getCurrentUserRole();
+        if (role == null) role = "Admin";
+
+        // Route to the specific layout for that persona
+        switch (role) {
+            case "Director":
+            case "Directors":
+                loadView("MonitoringDirector.fxml"); // Split-tables for Approvals
+                break;
+
+            case "Guard":
+            case "Guards":
+                loadView("MonitoringGuard.fxml");    // Guard view with Time In/Out
+                break;
+
+            case "Admin":
+            case "Administrators":
+            default:
+                loadView("Monitoring.fxml");         // Default master table
+                break;
+        }
+
         updateHeaderStats();
-        updateActiveSidebarButton(monitoringButton); // 👈 Update selection
+        updateActiveSidebarButton(monitoringButton);
     }
 
     public void loadReports() {
         setPageTitle("Reports");
         loadView("Reports.fxml");
-        updateActiveSidebarButton(reportsButton); // 👈 Update selection
+        updateActiveSidebarButton(reportsButton);
     }
 
     @FXML
     private void loadSettings() {
         setPageTitle("Settings");
         loadView("Settings.fxml");
-        updateActiveSidebarButton(settingsButton); // 👈 Update selection
+        updateActiveSidebarButton(settingsButton);
     }
 
     // 👇 2. HELPER METHOD TO TOGGLE VISUAL STATES 👇
     private void updateActiveSidebarButton(ToggleButton activeButton) {
         // Deselect everything first to ensure UI consistency
         if (dashboardButton != null) dashboardButton.setSelected(false);
-        if (employeeButton != null) employeeButton.setSelected(false); // 👈 Changed to employeeButton
+        if (employeeButton != null) employeeButton.setSelected(false);
         if (passSlipButton != null) passSlipButton.setSelected(false);
         if (monitoringButton != null) monitoringButton.setSelected(false);
         if (reportsButton != null) reportsButton.setSelected(false);

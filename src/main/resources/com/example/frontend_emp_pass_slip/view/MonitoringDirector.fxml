@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-background: transparent;"
+            stylesheets="@../css/style.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.frontend_emp_pass_slip.controller.MonitoringDirectorController">
+
+    <VBox styleClass="screen" spacing="24">
+        <padding><Insets top="18" right="18" bottom="18" left="18"/></padding>
+
+        <!-- Header Section -->
+        <VBox spacing="4">
+            <Label text="Director Approvals Portal" styleClass="employee-page-title" />
+            <Label text="Review outstanding requests and track authorization history" styleClass="employee-page-subtitle" />
+        </VBox>
+
+        <!-- SECTION 1: AWAITING APPROVAL PANEL -->
+        <VBox spacing="12">
+            <Label fx:id="awaitingCountLabel" text="AWAITING APPROVAL — 0"
+                   style="-fx-font-weight: 800; -fx-text-fill: #b00020; -fx-font-size: 14px; -fx-letter-spacing: 1px;" />
+
+            <VBox styleClass="table-panel" style="-fx-padding: 10;">
+                <TableView fx:id="awaitingTable" styleClass="employee-table" minHeight="220" maxHeight="300" fixedCellSize="45">
+                    <columns>
+                        <TableColumn fx:id="awaitingSlipCol" text="SLIP" prefWidth="120" style="-fx-alignment: CENTER-LEFT;"/>
+                        <TableColumn fx:id="awaitingEmpIdCol" text="EMPLOYEE ID" prefWidth="150" style="-fx-alignment: CENTER-LEFT;"/>
+                        <TableColumn fx:id="awaitingNameCol" text="NAME" prefWidth="350" style="-fx-alignment: CENTER-LEFT; -fx-font-weight: bold;"/>
+                        <TableColumn fx:id="awaitingActionCol" text="" prefWidth="120" style="-fx-alignment: CENTER;"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </VBox>
+
+        <!-- SECTION 2: RESOLVED PANEL -->
+        <VBox spacing="12">
+            <Label fx:id="resolvedCountLabel" text="RESOLVED — 0"
+                   style="-fx-font-weight: 800; -fx-text-fill: #64748b; -fx-font-size: 14px; -fx-letter-spacing: 1px;" />
+
+            <VBox styleClass="table-panel" style="-fx-padding: 10;">
+                <TableView fx:id="resolvedTable" styleClass="employee-table" minHeight="300" VBox.vgrow="ALWAYS" fixedCellSize="45">
+                    <columns>
+                        <TableColumn fx:id="resolvedSlipCol" text="SLIP" prefWidth="120" style="-fx-alignment: CENTER-LEFT;"/>
+                        <TableColumn fx:id="resolvedEmpIdCol" text="EMPLOYEE ID" prefWidth="150" style="-fx-alignment: CENTER-LEFT;"/>
+                        <TableColumn fx:id="resolvedNameCol" text="NAME" prefWidth="280" style="-fx-alignment: CENTER-LEFT; -fx-font-weight: bold;"/>
+                        <TableColumn fx:id="resolvedStatusCol" text="STATUS" prefWidth="140" style="-fx-alignment: CENTER;"/>
+                        <TableColumn fx:id="resolvedActionCol" text="" prefWidth="120" style="-fx-alignment: CENTER;"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </VBox>
+    </VBox>
+</ScrollPane>

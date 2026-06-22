@@ -7,17 +7,20 @@ public class PassSlipMonitoringRecord {
     private final String name;
     private final String department;
     private final String date;
-    private final String timeRequested; // NEW FIELD
-    private final String timeOut;
-    private final String timeIn;
+    private final String timeRequested;
+    private final String expectedTimeOut; // 🟢 Added
+    private final String expectedTimeIn;  // 🟢 Added
+    private final String timeOut;         // Actual out
+    private final String timeIn;          // Actual in
     private final String duration;
-    private final String type;
+    private final String reasonForLeaving; // 🟢 Set via constructor now
     private final String status;
 
     public PassSlipMonitoringRecord(int passSlipId, String slipNo, String employeeId,
                                     String name, String department, String date,
-                                    String timeRequested, String timeOut, String timeIn,
-                                    String duration, String type, String status) {
+                                    String timeRequested, String expectedTimeOut, String expectedTimeIn,
+                                    String timeOut, String timeIn, String duration,
+                                    String reasonForLeaving, String status) {
         this.passSlipId = passSlipId;
         this.slipNo = slipNo;
         this.employeeId = employeeId;
@@ -25,56 +28,75 @@ public class PassSlipMonitoringRecord {
         this.department = department;
         this.date = date;
         this.timeRequested = timeRequested;
+        this.expectedTimeOut = expectedTimeOut;
+        this.expectedTimeIn = expectedTimeIn;
         this.timeOut = timeOut;
         this.timeIn = timeIn;
         this.duration = duration;
-        this.type = type;
+        this.reasonForLeaving = reasonForLeaving;
         this.status = status;
     }
 
-    public int getPassSlipId() {
-        return passSlipId;
+    public String getFullName() {
+        return this.name;
     }
 
-    public String getSlipNo() {
-        return slipNo;
+    // 🟢 Extract Destination safely from string formatting
+    public String getDestination() {
+        // 1. Safety check first to prevent NullPointerExceptions
+        if (this.reasonForLeaving == null || this.reasonForLeaving.isBlank() || this.reasonForLeaving.equals("-")) {
+            return "N/A";
+        }
+
+        // 2. Safely parse the string
+        if (this.reasonForLeaving.contains("|")) {
+            String[] parts = this.reasonForLeaving.split("\\|");
+
+            // Loop through to find the actual Destination part, ignoring where it sits in the array
+            for (String part : parts) {
+                String p = part.trim();
+                if (p.startsWith("Destination:")) {
+                    return p.replaceFirst("Destination:", "").trim();
+                }
+            }
+        }
+        return "N/A";
     }
 
-    public String getEmployeeId() {
-        return employeeId;
+    // 🟢 Extract Reason safely from string formatting
+    public String getReason() {
+        if (this.reasonForLeaving == null || this.reasonForLeaving.isBlank() || this.reasonForLeaving.equals("-")) return "N/A";
+        if (this.reasonForLeaving.contains("|")) {
+            String[] parts = this.reasonForLeaving.split("\\|");
+            if (parts.length > 1) {
+                return parts[1].replace("Reason:", "").trim();
+            }
+        }
+        return this.reasonForLeaving; // Fallback to raw text if it doesn't contain a pipe
     }
 
-    public String getName() {
-        return name;
+    // 🟢 Directly pull cleaner values for your modal windows
+    public String getEstimatedOut() {
+        return (expectedTimeOut == null || expectedTimeOut.equals("-")) ? "N/A" : expectedTimeOut;
     }
 
-    public String getDepartment() {
-        return department;
+    public String getEstimatedIn() {
+        return (expectedTimeIn == null || expectedTimeIn.equals("-")) ? "N/A" : expectedTimeIn;
     }
 
-    public String getDate() {
-        return date;
-    }
-
-    public String getTimeOut() {
-        return timeOut;
-    }
-
-    public String getTimeIn() {
-        return timeIn;
-    }
-
-    public String getDuration() {
-        return duration;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-    public String getTimeRequested() {return this.timeRequested;}
-
+    // --- STANDARD GETTERS ---
+    public int getPassSlipId() { return passSlipId; }
+    public String getSlipNo() { return slipNo; }
+    public String getEmployeeId() { return employeeId; }
+    public String getName() { return name; }
+    public String getDepartment() { return department; }
+    public String getDate() { return date; }
+    public String getTimeRequested() { return timeRequested; }
+    public String getExpectedTimeOut() { return expectedTimeOut; }
+    public String getExpectedTimeIn() { return expectedTimeIn; }
+    public String getTimeOut() { return timeOut; }
+    public String getTimeIn() { return timeIn; }
+    public String getDuration() { return duration; }
+    public String getReasonForLeaving() { return reasonForLeaving; }
+    public String getStatus() { return status; }
 }
