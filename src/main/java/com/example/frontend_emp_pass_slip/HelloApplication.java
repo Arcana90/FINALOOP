@@ -39,6 +39,9 @@ public class HelloApplication extends Application {
 
         ConnectionPoolManager.initialize(url, user, password, 3);
         System.out.println("Database pool initialized successfully.");
+
+        // 👇 ADD THIS LINE HERE TO RUN THE SEEDER ON LAUNCH 👇
+        backend.auth.AuthenticationService.getInstance().seedAccounts();
     }
 
     @Override

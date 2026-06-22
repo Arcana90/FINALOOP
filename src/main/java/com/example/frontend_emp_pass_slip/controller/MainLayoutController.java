@@ -39,6 +39,48 @@ public class MainLayoutController {
         // Mark Dashboard active on initial startup
         updateActiveSidebarButton(dashboardButton);
         loadDashboard();
+
+        // 👈 NEW: Apply Role-Based Access Control
+        applyRolePermissions();
+    }
+
+    // 👇 NEW: Helper method to hide buttons based on role 👇
+    private void applyRolePermissions() {
+        String role = backend.auth.SessionManager.getInstance().getCurrentUserRole();
+
+        if (role == null) return;
+
+        switch (role) {
+            case "Director":
+            case "Directors": // 👈 Handles the plural DB string match
+                hideButton(employeeButton);
+                hideButton(passSlipButton);
+
+                break;
+
+            case "Guard":
+            case "Guards": // 👈 Handles the plural DB string match
+                hideButton(employeeButton);
+                hideButton(passSlipButton);
+                hideButton(reportsButton);
+
+                updateActiveSidebarButton(monitoringButton);
+                loadMonitoring();
+                break;
+
+            case "Admin":
+            case "Administrators":
+            default:
+                break;
+        }
+    }
+
+    // 👇 NEW: Helper method to cleanly remove a button from the UI 👇
+    private void hideButton(ToggleButton button) {
+        if (button != null) {
+            button.setVisible(false);
+            button.setManaged(false); // Removes the empty gap in the VBox
+        }
     }
 
     public void loadDashboard() {

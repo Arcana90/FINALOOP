@@ -11,21 +11,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-/**
- * Manages the single global administrator session.
- *
- * <p>Responsibilities:
- * <ul>
- *   <li>Creates and destroys session tokens.</li>
- *   <li>Tracks login timestamp and last-activity timestamp.</li>
- *   <li>Schedules and reschedules an idle-lock timer that fires after
- *       {@link ApplicationConstants#SESSION_IDLE_TIMEOUT_MIN} minutes of inactivity.</li>
- * </ul>
- *
- * <p>The lock callback supplied via {@link #createSession(Runnable)} is executed on the
- * idle-timeout daemon thread; callers are responsible for dispatching any JavaFX work
- * with {@code Platform.runLater()} inside that callback.
- */
 public final class SessionManager {
 
     private static final Logger LOG = Logger.getLogger(SessionManager.class.getName());
@@ -37,6 +22,10 @@ public final class SessionManager {
     private volatile LocalDateTime loginTime;
     private volatile LocalDateTime lastActivityTime;
     private volatile boolean       locked = true;
+
+    // NEW: Store role and username for UI routing and unlocking
+    private volatile String        currentUserRole;
+    private volatile String        currentUsername;
 
     // ── Idle-lock timer ─────────────────────────────────────────────────────────
     private final ScheduledExecutorService scheduler =
@@ -64,43 +53,38 @@ public final class SessionManager {
 
     // ── Public API ──────────────────────────────────────────────────────────────
 
-    /**
-     * Creates a new session token and starts the idle-lock countdown.
-     *
-     * @param onLock callback invoked when the session auto-locks due to inactivity
-     */
-    public synchronized void createSession(Runnable onLock) {
+    // UPDATED: Now accepts role and username
+// Inside SessionManager.java
+    public synchronized void createSession(Runnable onLock, String role, String username) {
         this.sessionToken     = generateToken();
         this.loginTime        = LocalDateTime.now();
         this.lastActivityTime = LocalDateTime.now();
         this.locked           = false;
         this.lockCallback     = onLock;
+        this.currentUserRole  = role;
+        this.currentUsername  = username; // Make sure this variable exists in your class
         scheduleIdleLock();
-        LOG.info("Session created. Token prefix: " + sessionToken.substring(0, 8) + "…");
     }
 
-    /**
-     * Explicitly invalidates the session (logout or manual lock).
-     */
+    public String getCurrentUsername() {
+        return currentUsername;
+    }
+
     public synchronized void invalidateSession() {
-        locked       = true;
-        sessionToken = null;
+        locked          = true;
+        sessionToken    = null;
+        currentUserRole = null;
+        currentUsername = null;
         cancelIdleLock();
         LOG.info("Session invalidated.");
     }
 
-    /**
-     * Locks the session without clearing the token, allowing unlock-in-place (screensaver mode).
-     */
     public synchronized void lockSession() {
         locked = true;
         cancelIdleLock();
         LOG.info("Session locked.");
     }
 
-    /**
-     * Unlocks a previously locked session and resets the idle timer.
-     */
     public synchronized void unlockSession() {
         locked            = false;
         lastActivityTime  = LocalDateTime.now();
@@ -108,7 +92,6 @@ public final class SessionManager {
         LOG.info("Session unlocked.");
     }
 
-    /** Resets the idle timer. Call this on every meaningful user interaction. */
     public synchronized void recordActivity() {
         if (!locked) {
             lastActivityTime = LocalDateTime.now();
@@ -116,14 +99,15 @@ public final class SessionManager {
         }
     }
 
-    /** @return {@code true} if the session exists and is not locked. */
     public boolean isSessionValid() {
         return !locked && sessionToken != null;
     }
 
+    // GETTERS
     public String getSessionToken()        { return sessionToken; }
     public LocalDateTime getLoginTime()    { return loginTime; }
     public LocalDateTime getLastActivity() { return lastActivityTime; }
+    public String getCurrentUserRole()     { return currentUserRole; }
 
     // ── Private helpers ─────────────────────────────────────────────────────────
 

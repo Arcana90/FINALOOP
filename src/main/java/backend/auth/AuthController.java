@@ -147,6 +147,7 @@ public final class AuthController implements Initializable {
         }
     }
 
+
     private void displayFieldErrors(Map<String, String> errors) {
         errors.forEach((field, msg) -> {
             switch (field) {

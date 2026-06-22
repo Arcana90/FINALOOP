@@ -57,6 +57,22 @@ public final class DatabaseInitializer {
                         occurred_at TEXT    NOT NULL DEFAULT (datetime('now'))
                     )
                 """);
+                // ── Unified Users Table (Admins, Directors, Guards) ─────────
+                st.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username      TEXT    NOT NULL UNIQUE,
+                        password_hash TEXT    NOT NULL,
+                        role          TEXT    NOT NULL CHECK (role IN ('Administrators', 'Directors', 'Guards')),
+                        created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+                    )
+                """);
+
+                // Optional: Automatically insert a default admin if none exists
+                st.execute("""
+                    INSERT OR IGNORE INTO users (id, username, password_hash, role) 
+                    VALUES (1, 'admin', 'YOUR_DEFAULT_HASH_HERE', 'Administrators')
+                """);
             }
             LOG.info("Database schema verified / initialised.");
         } catch (InterruptedException e) {

@@ -38,8 +38,13 @@ public final class ApplicationBootstrap {
         DatabaseInitializer.initialize();
 
         AuthenticationService authService = AuthenticationService.getInstance();
-        authService.seedAdministrator(DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD);
-        java.util.Arrays.fill(DEFAULT_ADMIN_PASSWORD, '\0');
+
+        // REMOVE OR COMMENT THESE OUT:
+        // authService.seedAdministrator(DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD);
+        // java.util.Arrays.fill(DEFAULT_ADMIN_PASSWORD, '\0');
+
+        // Keep this to seed the other two:
+        authService.seedAccounts();
 
         LOG.info("Application bootstrap complete.");
     }
