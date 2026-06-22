@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+
+<?import javafx.scene.control.*?>
+
+<?import javafx.scene.layout.*?>
+
+<ScrollPane fitToWidth="true"
+            hbarPolicy="NEVER"
+            styleClass="dashboard-scroll"
+            xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.frontend_emp_pass_slip.controller.DashboardController">
+
+    <VBox styleClass="screen dashboard-screen" spacing="16">
+        <padding>
+            <Insets top="18" right="18" bottom="18" left="18" />
+        </padding>
+
+        <VBox spacing="4">
+            <Label text="Dashboard" styleClass="dashboard-page-title" />
+            <Label fx:id="dashboardDateLabel" text="" styleClass="dashboard-page-date" />
+        </VBox>
+
+        <HBox spacing="14">
+            <VBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT">
+                    <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #2563eb;">
+                        <Label text="👥" styleClass="dashboard-card-icon-text" />
+                    </StackPane>
+                </HBox>
+                <Region VBox.vgrow="ALWAYS" />
+                <Label fx:id="totalEmployeesLabel" text="0" styleClass="dashboard-stat-number" />
+                <Label text="Total Employees" styleClass="dashboard-stat-label" />
+            </VBox>
+
+            <VBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT">
+                    <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #f43f5e;">
+                        <Label text="⌁" styleClass="dashboard-card-icon-text" />
+                    </StackPane>
+                </HBox>
+                <Region VBox.vgrow="ALWAYS" />
+                <Label fx:id="activePassSlipsLabel" text="0" styleClass="dashboard-stat-number" />
+                <Label text="Active Pass Slips" styleClass="dashboard-stat-label" />
+                <Label text="currently outside" styleClass="dashboard-danger-text" />
+            </VBox>
+
+            <VBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT">
+                    <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #f59e0b;">
+                        <Label text="▤" styleClass="dashboard-card-icon-text" />
+                    </StackPane>
+                </HBox>
+                <Region VBox.vgrow="ALWAYS" />
+                <Label fx:id="todaysSlipsLabel" text="0" styleClass="dashboard-stat-number" />
+                <Label text="Today's Slips" styleClass="dashboard-stat-label" />
+            </VBox>
+
+            <VBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT">
+                    <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #10b981;">
+                        <Label text="✓" styleClass="dashboard-card-icon-text" />
+                    </StackPane>
+                </HBox>
+                <Region VBox.vgrow="ALWAYS" />
+                <Label fx:id="totalRecordsLabel" text="0" styleClass="dashboard-stat-number" />
+                <Label text="Total Records" styleClass="dashboard-stat-label" />
+            </VBox>
+        </HBox>
+
+        <VBox styleClass="dashboard-panel" spacing="14">
+            <VBox spacing="3">
+                <Label text="Quick Actions" styleClass="dashboard-panel-title" />
+                <Label text="Common administrative tasks" styleClass="dashboard-panel-subtitle" />
+            </VBox>
+
+            <HBox spacing="14">
+                <HBox styleClass="quick-action-card" style="-fx-background-color: #2563eb;" alignment="CENTER_LEFT" spacing="14" HBox.hgrow="ALWAYS" onMouseClicked="#goToPassSlip">
+                    <StackPane styleClass="quick-action-icon">
+                        <Label text="⊞" styleClass="quick-action-icon-text" />
+                    </StackPane>
+                    <VBox spacing="2">
+                        <Label text="New Pass Slip" styleClass="quick-action-title" />
+                        <Label text="Issue pass slip now" styleClass="quick-action-subtitle" />
+                    </VBox>
+                </HBox>
+
+                <HBox styleClass="quick-action-card" style="-fx-background-color: #059669;" alignment="CENTER_LEFT" spacing="14" HBox.hgrow="ALWAYS" onMouseClicked="#goToEmployeeManagement">
+                    <StackPane styleClass="quick-action-icon">
+                        <Label text="👤+" styleClass="quick-action-icon-text" />
+                    </StackPane>
+                    <VBox spacing="2">
+                        <Label text="Add Employee" styleClass="quick-action-title" />
+                        <Label text="Register new employee" styleClass="quick-action-subtitle" />
+                    </VBox>
+                </HBox>
+
+                <HBox styleClass="quick-action-card" style="-fx-background-color: #9333ea;" alignment="CENTER_LEFT" spacing="14" HBox.hgrow="ALWAYS" onMouseClicked="#goToReports">
+                    <StackPane styleClass="quick-action-icon">
+                        <Label text="▥" styleClass="quick-action-icon-text" />
+                    </StackPane>
+                    <VBox spacing="2">
+                        <Label text="Generate Report" styleClass="quick-action-title" />
+                        <Label text="View analytics and export" styleClass="quick-action-subtitle" />
+                    </VBox>
+                </HBox>
+
+                <HBox styleClass="quick-action-card" style="-fx-background-color: #f59e0b;" alignment="CENTER_LEFT" spacing="14" HBox.hgrow="ALWAYS" onMouseClicked="#goToMonitoring">
+                    <StackPane styleClass="quick-action-icon">
+                        <Label text="◉" styleClass="quick-action-icon-text" />
+                    </StackPane>
+                    <VBox spacing="2">
+                        <Label text="Monitor Status" styleClass="quick-action-title" />
+                        <Label text="Real-time tracking" styleClass="quick-action-subtitle" />
+                    </VBox>
+                </HBox>
+            </HBox>
+        </VBox>
+
+        <HBox spacing="10" prefHeight="218">
+            <VBox styleClass="table-panel" HBox.hgrow="ALWAYS" spacing="8" style="-fx-border-color: #ff4b21;">
+                <HBox styleClass="section-title">
+                    <Label text="CURRENTLY OUT" style="-fx-font-weight: bold;" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Label fx:id="currentlyOutBadgeLabel" text="0" styleClass="badge" />
+                </HBox>
+                <VBox fx:id="currentlyOutList" spacing="8" style="-fx-padding: 8 12;" />
+            </VBox>
+
+            <VBox styleClass="table-panel" HBox.hgrow="ALWAYS" spacing="8">
+                <Label text="RECENT ACTIVITY" styleClass="section-title" maxWidth="Infinity" />
+                <VBox fx:id="recentActivityList" spacing="8" style="-fx-padding: 8 12;" />
+            </VBox>
+        </HBox>
+
+        <VBox styleClass="dashboard-panel" spacing="14">
+            <VBox spacing="3">
+                <Label text="Quick Stats - Today" styleClass="dashboard-panel-title" />
+                <Label text="Summary of today's pass slip activity" styleClass="dashboard-panel-subtitle" />
+            </VBox>
+
+            <HBox spacing="14">
+                <VBox alignment="CENTER" HBox.hgrow="ALWAYS" styleClass="quick-stat-card" style="-fx-background-color: #eff6ff; -fx-border-color: #bfdbfe;">
+                    <Label fx:id="officialBusinessLabel" text="0" styleClass="quick-stat-number" />
+                    <Label text="Official Business" styleClass="quick-stat-label" />
+                </VBox>
+
+                <VBox alignment="CENTER" HBox.hgrow="ALWAYS" styleClass="quick-stat-card" style="-fx-background-color: #f5f3ff; -fx-border-color: #ddd6fe;">
+                    <Label fx:id="personalLabel" text="0" styleClass="quick-stat-number" />
+                    <Label text="Personal" styleClass="quick-stat-label" />
+                </VBox>
+
+                <VBox alignment="CENTER" HBox.hgrow="ALWAYS" styleClass="quick-stat-card" style="-fx-background-color: #ecfdf5; -fx-border-color: #bbf7d0;">
+                    <Label fx:id="returnedTodayLabel" text="0" styleClass="quick-stat-number" />
+                    <Label text="Returned" styleClass="quick-stat-label" />
+                </VBox>
+
+                <VBox alignment="CENTER" HBox.hgrow="ALWAYS" styleClass="quick-stat-card" style="-fx-background-color: #fef2f2; -fx-border-color: #fecaca;">
+                    <Label fx:id="stillOutLabel" text="0" styleClass="quick-stat-number" />
+                    <Label text="Still Out" styleClass="quick-stat-label" />
+                </VBox>
+            </HBox>
+        </VBox>
+
+    </VBox>
+
+
+</ScrollPane>

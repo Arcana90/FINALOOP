@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import java.net.URL?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane fx:id="mainRoot"
+            styleClass="app-root figma-app-root"
+            xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.frontend_emp_pass_slip.controller.MainLayoutController">
+
+    <stylesheets>
+        <URL value="@../css/style.css" />
+    </stylesheets>
+
+    <left>
+        <VBox styleClass="figma-sidebar">
+            <fx:define>
+                <ToggleGroup fx:id="navGroup" />
+            </fx:define>
+
+            <HBox styleClass="sidebar-brand" alignment="CENTER_LEFT" spacing="12">
+                <StackPane styleClass="sidebar-brand-icon">
+                    <ImageView fitWidth="30" fitHeight="30" preserveRatio="true" smooth="true">
+                        <image>
+                            <Image url="@../images/pup-logo.png" />
+                        </image>
+                    </ImageView>
+                </StackPane>
+
+                <VBox spacing="1">
+                    <Label text="PassSlip" styleClass="sidebar-brand-title" />
+                    <Label text="University Admin" styleClass="sidebar-brand-subtitle" />
+                </VBox>
+            </HBox>
+
+            <Separator styleClass="sidebar-separator" />
+
+            <VBox spacing="8" styleClass="sidebar-nav">
+
+                <ToggleButton fx:id="dashboardButton"
+                              toggleGroup="$navGroup"
+                              styleClass="figma-nav-button"
+                              onAction="#loadDashboard">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label text="🏠" styleClass="figma-nav-icon" />
+                            <Label text="Dashboard" styleClass="figma-nav-text" />
+                        </HBox>
+                    </graphic>
+                </ToggleButton>
+
+                <ToggleButton fx:id="employeeButton"
+                              toggleGroup="$navGroup"
+                              styleClass="figma-nav-button"
+                              onAction="#loadEmployeeMgmt">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label text="👥" styleClass="figma-nav-icon" />
+                            <Label text="Employee Management" styleClass="figma-nav-text" />
+                        </HBox>
+                    </graphic>
+                </ToggleButton>
+
+                <ToggleButton fx:id="passSlipButton"
+                              toggleGroup="$navGroup"
+                              styleClass="figma-nav-button"
+                              onAction="#loadPassSlip">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label text="📝" styleClass="figma-nav-icon" />
+                            <Label text="Pass Slip Issuance" styleClass="figma-nav-text" />
+                        </HBox>
+                    </graphic>
+                </ToggleButton>
+
+                <ToggleButton fx:id="monitoringButton"
+                              toggleGroup="$navGroup"
+                              styleClass="figma-nav-button"
+                              onAction="#loadMonitoring">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label text="📋" styleClass="figma-nav-icon" />
+                            <Label text="Monitoring" styleClass="figma-nav-text" />
+                        </HBox>
+                    </graphic>
+                </ToggleButton>
+
+                <ToggleButton fx:id="reportsButton"
+                              toggleGroup="$navGroup"
+                              styleClass="figma-nav-button"
+                              onAction="#loadReports">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label text="📊" styleClass="figma-nav-icon" />
+                            <Label text="Reports" styleClass="figma-nav-text" />
+                        </HBox>
+                    </graphic>
+                </ToggleButton>
+
+                <ToggleButton fx:id="settingsButton"
+                              toggleGroup="$navGroup"
+                              styleClass="figma-nav-button"
+                              onAction="#loadSettings">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <Label text="&#x2699;" styleClass="figma-nav-icon" />
+                            <Label text="Settings" styleClass="figma-nav-text" />
+                        </HBox>
+                    </graphic>
+                </ToggleButton>
+
+            </VBox>
+
+            <Region VBox.vgrow="ALWAYS" />
+
+            <Separator styleClass="sidebar-separator" />
+
+            <Button text="↪   Logout"
+                    styleClass="figma-logout-button"
+                    onAction="#logout" />
+        </VBox>
+    </left>
+
+    <center>
+        <BorderPane styleClass="figma-main-area">
+            <top>
+                <HBox styleClass="figma-top-bar" alignment="CENTER_LEFT" spacing="12">
+                    <Label text="☰" styleClass="top-menu-icon" />
+                    <Label text="University" styleClass="top-muted" />
+                    <Label text="›" styleClass="top-muted" />
+                    <Label fx:id="pageTitleLabel" text="Dashboard" styleClass="top-current-page" />
+
+                    <Region HBox.hgrow="ALWAYS" />
+
+                    <Label fx:id="employeesOutLabel" text="0 out" styleClass="figma-out-pill" />
+                    <Label fx:id="currentDateLabel" text="" styleClass="top-muted" />
+
+                </HBox>
+            </top>
+
+            <center>
+                <StackPane fx:id="contentArea" styleClass="figma-content-area" />
+            </center>
+        </BorderPane>
+    </center>
+
+</BorderPane>

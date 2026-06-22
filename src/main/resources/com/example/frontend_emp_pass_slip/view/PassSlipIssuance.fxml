@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane fitToWidth="true"
+            hbarPolicy="NEVER"
+            styleClass="pass-slip-scroll"
+            xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.frontend_emp_pass_slip.controller.PassSlipIssuanceController">
+
+    <VBox styleClass="screen pass-slip-screen" spacing="16">
+        <padding>
+            <Insets top="18" right="18" bottom="24" left="18" />
+        </padding>
+
+        <VBox spacing="4">
+            <Label text="Issue Pass Slip" styleClass="pass-slip-page-title" />
+            <Label text="Fill in the form below to issue a new employee pass slip." styleClass="pass-slip-page-subtitle" />
+        </VBox>
+
+        <VBox styleClass="pass-slip-card" spacing="0" maxWidth="720">
+            <VBox spacing="4" styleClass="pass-slip-card-header">
+                <padding>
+                    <Insets top="16" right="16" bottom="16" left="16"/>
+                </padding>
+                <Label text="Pass Slip Details" styleClass="pass-slip-card-title" />
+                <Label text="All fields marked with * are required" styleClass="pass-slip-card-subtitle" />
+            </VBox>
+
+            <GridPane hgap="18" vgap="12" styleClass="pass-slip-form">
+                <padding>
+                    <Insets top="16" right="16" bottom="16" left="16"/>
+                </padding>
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" />
+                    <ColumnConstraints percentWidth="50" />
+                </columnConstraints>
+
+                <Label text="Select Employee *" styleClass="pass-slip-field-label" GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2" />
+                <ComboBox fx:id="employeeComboBox" promptText="Select an Employee..." maxWidth="Infinity" prefHeight="38" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2" />
+
+                <Label text="Department" styleClass="pass-slip-field-label" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                <Label text="Position" styleClass="pass-slip-field-label" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                <TextField fx:id="departmentField" editable="false" prefHeight="38" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                <TextField fx:id="positionField" editable="false" prefHeight="38" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+                <Label text="Supervisor" styleClass="pass-slip-field-label" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                <Label text="Type of Pass *" styleClass="pass-slip-field-label" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                <TextField fx:id="supervisorField" editable="false" prefHeight="38" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                <ComboBox fx:id="passTypeComboBox" maxWidth="Infinity" prefHeight="38" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+
+                <Label text="Destination *" styleClass="pass-slip-field-label" GridPane.columnIndex="0" GridPane.rowIndex="6" GridPane.columnSpan="2" />
+                <TextField fx:id="destinationField" promptText="Office, establishment, or complete address" prefHeight="38" GridPane.columnIndex="0" GridPane.rowIndex="7" GridPane.columnSpan="2" />
+
+                <Label text="Reason / Nature of Pass *" styleClass="pass-slip-field-label" GridPane.columnIndex="0" GridPane.rowIndex="8" GridPane.columnSpan="2" />
+                <TextArea fx:id="reasonTextArea" prefRowCount="4" promptText="Describe the reason for this pass slip request..." GridPane.columnIndex="0" GridPane.rowIndex="9" GridPane.columnSpan="2" />
+
+                <Label text="Estimated Time Out *" styleClass="pass-slip-field-label" GridPane.columnIndex="0" GridPane.rowIndex="10" />
+                <Label text="Estimated Time In *" styleClass="pass-slip-field-label" GridPane.columnIndex="1" GridPane.rowIndex="10" />
+
+                <HBox spacing="8" alignment="CENTER_LEFT" GridPane.columnIndex="0" GridPane.rowIndex="11">
+                    <TextField fx:id="outHourField" promptText="--" prefWidth="60" prefHeight="38" alignment="CENTER"/>
+                    <Label text=":" style="-fx-font-weight: bold; -fx-font-size: 16px;" />
+                    <TextField fx:id="outMinuteField" promptText="--" prefWidth="60" prefHeight="38" alignment="CENTER"/>
+                    <ComboBox fx:id="timeOutAmPmComboBox" prefHeight="38" prefWidth="110" />
+                </HBox>
+
+                <HBox spacing="8" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="11">
+                    <TextField fx:id="inHourField" promptText="--" prefWidth="60" prefHeight="38" alignment="CENTER"/>
+                    <Label text=":" style="-fx-font-weight: bold; -fx-font-size: 16px;" />
+                    <TextField fx:id="inMinuteField" promptText="--" prefWidth="60" prefHeight="38" alignment="CENTER"/>
+                    <ComboBox fx:id="timeInAmPmComboBox" prefHeight="38" prefWidth="110" />
+                </HBox>
+
+                <Label fx:id="statusLabel" wrapText="true" GridPane.columnIndex="0" GridPane.rowIndex="12" GridPane.columnSpan="2" />
+
+                <HBox spacing="10" GridPane.columnIndex="0" GridPane.rowIndex="13" GridPane.columnSpan="2">
+                    <Button text="Issue Pass Slip" onAction="#issuePassSlip" styleClass="pass-slip-submit-button" />
+                    <Button text="Clear Form" onAction="#clearForm" styleClass="pass-slip-clear-button" />
+                </HBox>
+            </GridPane>
+        </VBox>
+    </VBox>
+</ScrollPane>
