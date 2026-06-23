@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox styleClass="screen" spacing="16" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.frontend_emp_pass_slip.controller.MonitoringGuardController"
+      stylesheets="@../css/style.css">
+    <padding><Insets top="18" right="18" bottom="18" left="18"/></padding>
+
+    <VBox spacing="4">
+        <Label text="Gate Monitoring" styleClass="employee-page-title" />
+        <Label text="Log physical departures and arrivals for approved pass slips" styleClass="employee-page-subtitle" />
+    </VBox>
+
+    <HBox spacing="14" alignment="CENTER_LEFT" maxWidth="Infinity">
+        <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400" style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
+            <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                <Label fx:id="approvedSlipsLabel" text="0" styleClass="dashboard-stat-number" />
+                <Label text="Total Approved" styleClass="dashboard-stat-label" />
+            </VBox>
+            <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #2563eb; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
+                <Label text="📋" styleClass="dashboard-card-icon-text" />
+            </StackPane>
+        </HBox>
+
+        <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400" style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
+            <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                <Label fx:id="currentlyOutLabel" text="0" styleClass="dashboard-stat-number" />
+                <Label text="Currently Out" styleClass="dashboard-stat-label" style="-fx-text-fill: #ef4444; -fx-font-weight: bold;" />
+            </VBox>
+            <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #ef4444; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
+                <Label text="⌁" styleClass="dashboard-card-icon-text" />
+            </StackPane>
+        </HBox>
+
+        <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400" style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
+            <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                <Label fx:id="returnedLabel" text="0" styleClass="dashboard-stat-number" />
+                <Label text="Returned Today" styleClass="dashboard-stat-label" />
+            </VBox>
+            <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #10b981; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
+                <Label text="✓" styleClass="dashboard-card-icon-text" />
+            </StackPane>
+        </HBox>
+    </HBox>
+
+    <VBox styleClass="table-panel" spacing="14" VBox.vgrow="ALWAYS" style="-fx-padding: 16 18 16 18;">
+
+        <HBox spacing="8" alignment="CENTER_LEFT" maxWidth="Infinity">
+            <TextField fx:id="searchField" promptText="Search employee name or slip no..." HBox.hgrow="ALWAYS" maxWidth="Infinity" prefHeight="35" />
+            <ComboBox fx:id="statusFilter" prefWidth="160" prefHeight="35" promptText="Filter Status" />
+        </HBox>
+
+        <TableView fx:id="monitoringTable" styleClass="employee-table" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="slipNoColumn" text="Slip No." prefWidth="100" />
+                <TableColumn fx:id="employeeIdColumn" text="Employee ID" prefWidth="120" />
+                <TableColumn fx:id="nameColumn" text="Name" prefWidth="250" />
+                <TableColumn fx:id="dateColumn" text="Date" prefWidth="120" />
+                <TableColumn fx:id="timeOutColumn" text="Actual Time Out" prefWidth="150" style="-fx-alignment: CENTER;" />
+                <TableColumn fx:id="timeInColumn" text="Actual Time In" prefWidth="150" style="-fx-alignment: CENTER;" />
+                <TableColumn fx:id="actionColumn" text="Action" prefWidth="140" style="-fx-alignment: CENTER;" />
+            </columns>
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+            </columnResizePolicy>
+        </TableView>
+        <Label fx:id="countLabel" styleClass="muted-text" />
+    </VBox>
+</VBox>

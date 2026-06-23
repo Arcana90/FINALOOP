@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+
+<ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="dashboard-scroll"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.frontend_emp_pass_slip.controller.ReportsController">
+
+
+    <VBox styleClass="screen" spacing="16">
+        <padding>
+            <Insets top="18" right="18" bottom="18" left="18" />
+        </padding>
+
+
+        <VBox spacing="4">
+            <Label text="Report Generation" styleClass="employee-page-title" />
+            <Label text="Pass slip statistics and summary data" styleClass="employee-page-subtitle" />
+        </VBox>
+
+
+        <HBox spacing="14" alignment="CENTER_LEFT" maxWidth="Infinity">
+
+
+            <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
+                  style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
+                <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                    <Label fx:id="totalSlipsLabel" text="24" styleClass="dashboard-stat-number" />
+                    <Label text="Total Slips" styleClass="dashboard-stat-label" />
+                </VBox>
+                <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #2563eb; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
+                    <Label text="📋" styleClass="dashboard-card-icon-text" />
+                </StackPane>
+            </HBox>
+
+
+            <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
+                  style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
+                <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                    <Label fx:id="currentlyOutLabel" text="2" styleClass="dashboard-stat-number" />
+                    <Label text="Currently Out" styleClass="dashboard-stat-label" style="-fx-text-fill: #ef4444; -fx-font-weight: bold;" />
+                </VBox>
+                <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #ef4444; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
+                    <Label text="⌁" styleClass="dashboard-card-icon-text" />
+                </StackPane>
+            </HBox>
+
+
+            <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
+                  style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
+                <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                    <Label fx:id="officialLabel" text="16" styleClass="dashboard-stat-number" />
+                    <Label text="Official" styleClass="dashboard-stat-label" />
+                </VBox>
+                <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #f59e0b; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
+                    <Label text="💼" styleClass="dashboard-card-icon-text" />
+                </StackPane>
+            </HBox>
+
+
+            <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
+                  style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
+                <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                    <Label fx:id="avgDurationLabel" text="1h 8m" styleClass="dashboard-stat-number" />
+                    <Label text="Avg Duration" styleClass="dashboard-stat-label" />
+                </VBox>
+                <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #10b981; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
+                    <Label text="⏱" styleClass="dashboard-card-icon-text" />
+                </StackPane>
+            </HBox>
+        </HBox>
+
+
+        <VBox styleClass="table-panel" VBox.vgrow="ALWAYS" style="-fx-padding: 16 18 16 18;">
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="DAILY ACTIVITY - THIS WEEK" style="-fx-font-weight: bold;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="dailyBtn" text="Daily" styleClass="primary-button"/>
+                <Button fx:id="monthlyBtn" text="Monthly" styleClass="outline-button"/>
+                <Button fx:id="printBtn" text="Print" styleClass="outline-button"/>
+            </HBox>
+            <BarChart fx:id="activityChart" VBox.vgrow="ALWAYS">
+                <xAxis><CategoryAxis fx:id="dayAxis" side="BOTTOM"/></xAxis>
+                <yAxis><NumberAxis fx:id="valueAxis" side="LEFT"/></yAxis>
+            </BarChart>
+        </VBox>
+
+
+        <VBox styleClass="table-panel" VBox.vgrow="ALWAYS" style="-fx-padding: 16 18 16 18;">
+            <Label text="PASS SLIPS BY DEPARTMENT" style="-fx-font-weight: bold; -fx-padding: 0 0 10 0;"/>
+            <TableView fx:id="reportsTable" styleClass="employee-table" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="departmentCol" text="Department" prefWidth="250"/>
+                    <TableColumn fx:id="totalCol" text="Total" prefWidth="140"/>
+                    <TableColumn fx:id="officialCol" text="Official" prefWidth="180"/>
+                    <TableColumn fx:id="personalCol" text="Personal" prefWidth="180"/>
+                    <TableColumn fx:id="avgDurationCol" text="Avg Duration" prefWidth="260"/>
+                </columns>
+            </TableView>
+        </VBox>
+    </VBox>
+</ScrollPane>

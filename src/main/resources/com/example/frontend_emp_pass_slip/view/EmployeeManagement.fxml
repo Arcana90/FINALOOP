@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+
+<?import javafx.scene.control.*?>
+
+<?import javafx.scene.layout.*?>
+
+<VBox styleClass="screen employee-screen"
+      spacing="16"
+      xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.frontend_emp_pass_slip.controller.EmployeeManagementController">
+
+    <padding>
+        <Insets top="18" right="18" bottom="18" left="18" />
+    </padding>
+
+    <HBox alignment="CENTER_LEFT">
+        <VBox spacing="4">
+            <Label text="Employee Management" styleClass="employee-page-title" />
+            <Label text="Employees registered in the system" styleClass="employee-page-subtitle" />
+        </VBox>
+
+        <Region HBox.hgrow="ALWAYS" />
+
+        <Button text="+ Add Employee"
+                onAction="#addEmployee"
+                style="-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 22;" />
+    </HBox>
+
+    <VBox styleClass="employee-table-card" spacing="14">
+        <HBox alignment="CENTER_LEFT" spacing="10">
+            <TextField fx:id="searchField"
+                       promptText="Search by name or ID..."
+                       prefWidth="270"
+                       prefHeight="38" />
+
+            <MenuButton fx:id="filterButton"
+                        text="Filter"
+                        prefHeight="38"
+                        style="-fx-background-color: white; -fx-border-color: #d0d5dd; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-text-fill: #344054; -fx-font-weight: bold; -fx-padding: 8 16;">
+                <items>
+                    <MenuItem text="All Employees" onAction="#filterAllEmployees" />
+                    <MenuItem text="Active Only" onAction="#filterActiveEmployees" />
+                    <MenuItem text="Inactive Only" onAction="#filterInactiveEmployees" />
+                </items>
+            </MenuButton>
+
+            <Button text="Deactivate"
+                    onAction="#deactivateSelectedEmployee"
+                    style="-fx-background-color: #fef2f2; -fx-border-color: #fecaca; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-text-fill: #dc2626; -fx-font-weight: bold; -fx-padding: 8 16;"
+                    prefHeight="38" />
+
+            <Button text="Reactivate"
+                    onAction="#reactivateSelectedEmployee"
+                    style="-fx-background-color: #ecfdf5; -fx-border-color: #bbf7d0; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-text-fill: #059669; -fx-font-weight: bold; -fx-padding: 8 16;"
+                    prefHeight="38" />
+        </HBox>
+
+        <TableView fx:id="employeeTable"
+                   prefHeight="430"
+                   VBox.vgrow="ALWAYS"
+                   styleClass="employee-table">
+            <columns>
+                <TableColumn fx:id="employeeIdColumn" text="Employee ID" prefWidth="125" />
+                <TableColumn fx:id="nameColumn" text="Name" prefWidth="165" />
+                <TableColumn fx:id="departmentColumn" text="Department" prefWidth="170" />
+                <TableColumn fx:id="positionColumn" text="Position" prefWidth="150" />
+                <TableColumn fx:id="contactNumberColumn" text="Contact No." prefWidth="145" />
+                <TableColumn fx:id="emailColumn" text="Email" prefWidth="240" />
+                <TableColumn fx:id="supervisorColumn" text="Supervisor" prefWidth="160" />
+                <TableColumn fx:id="statusColumn" text="Status" prefWidth="100" />
+            </columns>
+        </TableView>
+
+        <Label fx:id="statusLabel"
+               text="0 employees on record"
+               styleClass="employee-count-label" />
+    </VBox>
+
+</VBox>
