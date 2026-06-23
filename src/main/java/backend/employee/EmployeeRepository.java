@@ -63,6 +63,109 @@ public class EmployeeRepository {
 
         return employees;
     }
+    /**
+     * Updates an existing employee record with new validated field entries.
+     */
+    public boolean updateEmployee(Employee employee) {
+        Connection connection = null;
+        String sql = """
+            UPDATE employees
+            SET first_name = ?, 
+                last_name = ?, 
+                department = ?, 
+                position = ?,
+                email = ?, 
+                contact_number = ?, 
+                supervisor_id = ?
+            WHERE employee_id = ?
+            """;
+
+        try {
+            connection = ConnectionPoolManager.getInstance().acquire();
+
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, employee.getFirstName());
+                statement.setString(2, employee.getLastName());
+                statement.setString(3, employee.getDepartment());
+                statement.setString(4, employee.getPosition());
+                statement.setString(5, employee.getEmail());
+                statement.setString(6, employee.getContactNumber());
+
+                if (employee.getSupervisorId() == null) {
+                    statement.setNull(7, java.sql.Types.INTEGER);
+                } else {
+                    statement.setInt(7, employee.getSupervisorId());
+                }
+
+                statement.setString(8, employee.getEmployeeId());
+
+                return statement.executeUpdate() > 0;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            ConnectionPoolManager.getInstance().release(connection);
+        }
+    }
+
+    /**
+     * Permanently deletes an employee record based on data privacy requirements.
+     */
+    /**
+     * Permanently deletes an employee record and forcefully removes any associated
+     * pass slips to bypass database foreign key constraints.
+     */
+    public boolean deleteEmployee(String employeeId) {
+        Connection connection = null;
+
+        // 1. Delete dependent pass slips first to satisfy constraints
+        String deletePassSlipsSql = "DELETE FROM pass_slips WHERE employee_id = ?";
+        // 2. Then delete the actual employee
+        String deleteEmployeeSql = "DELETE FROM employees WHERE employee_id = ?";
+
+        try {
+            connection = ConnectionPoolManager.getInstance().acquire();
+
+            // 🟢 Start a SQL Transaction
+            connection.setAutoCommit(false);
+
+            try (PreparedStatement ps1 = connection.prepareStatement(deletePassSlipsSql);
+                 PreparedStatement ps2 = connection.prepareStatement(deleteEmployeeSql)) {
+
+                // Execute step 1: Wipe their pass slips
+                ps1.setString(1, employeeId);
+                ps1.executeUpdate();
+
+                // Execute step 2: Delete the employee
+                ps2.setString(1, employeeId);
+                int rowsAffected = ps2.executeUpdate();
+
+                // 🟢 Commit the transaction if both succeeded
+                connection.commit();
+
+                return rowsAffected > 0;
+
+            } catch (Exception e) {
+                // If anything fails, rollback the database to its previous safe state
+                connection.rollback();
+                e.printStackTrace();
+                return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (connection != null) {
+                try {
+                    // Always restore the connection's default behavior before returning to the pool
+                    connection.setAutoCommit(true);
+                } catch (SQLException ignored) {}
+
+                ConnectionPoolManager.getInstance().release(connection);
+            }
+        }
+    }
 
     private static volatile EmployeeRepository instance;
 

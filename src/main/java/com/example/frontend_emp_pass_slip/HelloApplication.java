@@ -8,7 +8,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import backend.app.SessionManager;
 import backend.app.AppSettingsManager;
-import java.io.IOException;
+import java.io.IOException;import backend.passslip.SystemJobScheduler;
 
 public class HelloApplication extends Application {
 
@@ -27,6 +27,8 @@ public class HelloApplication extends Application {
         stage.setMinWidth(1024);
         stage.setMinHeight(680);
         stage.show();
+        SystemJobScheduler monitor = new SystemJobScheduler();
+        monitor.start247Monitor();
 
         startAutoLogout(stage);
     }

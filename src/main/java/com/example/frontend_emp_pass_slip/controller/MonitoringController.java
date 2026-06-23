@@ -150,7 +150,7 @@ public class MonitoringController {
     private void setupFilters() {
         // ADDED: "For Approval" to the filter dropdown
         statusFilter.setItems(FXCollections.observableArrayList(
-                "All Status", "For Approval", "Out", "Returned", "Cancelled"
+                "All Status", "For Approval", "Out", "Returned", "Cancelled", "AWOL", "Rejected"
         ));
 
         statusFilter.getSelectionModel().selectFirst();

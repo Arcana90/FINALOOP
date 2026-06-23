@@ -21,8 +21,7 @@ import java.util.regex.Pattern;
 public class EmployeeManagementController {
 
     private static final Pattern LETTERS_ONLY = Pattern.compile("^[\\p{L}\\s\\-.]+$");
-    private static final Pattern ALLOWED_EMAILS = Pattern.compile("^[a-zA-Z0-9._%+-]+@(gmail\\.com|example\\.com)$");
-    private static final Pattern ELEVEN_DIGITS = Pattern.compile("^\\d{11}$");
+    private static final Pattern ALLOWED_EMAILS = Pattern.compile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");    private static final Pattern ELEVEN_DIGITS = Pattern.compile("^\\d{11}$");
 
     private static final List<String> DEPARTMENT_OPTIONS = List.of(
             "Administration", "Engineering", "Finance", "Human Resources",
@@ -77,10 +76,176 @@ public class EmployeeManagementController {
         employees.setAll(employeeRepository.findAll());
         applyFilter();
     }
+    @FXML
+    private void editSelectedEmployee() {
+        Employee selected = employeeTable.getSelectionModel().getSelectedItem();
+
+        if (selected == null) {
+            showError("No Employee Selected", "Please select an employee from the table first.");
+            return;
+        }
+
+        Dialog<Employee> dialog = new Dialog<>();
+        dialog.setTitle("Edit Employee");
+        dialog.setHeaderText("Update information for " + selected.getFullName());
+
+        ButtonType saveButtonType = new ButtonType("Update", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+
+        TextField employeeIdField = new TextField(selected.getEmployeeId());
+        employeeIdField.setEditable(false);
+        employeeIdField.setStyle("-fx-background-color: #f4f4f4;");
+
+        // Assuming your Employee model has getFirstName() and getLastName()
+        // If it only has getFullName(), you may need to split the string here.
+        TextField firstNameField = new TextField(selected.getFirstName());
+        TextField lastNameField = new TextField(selected.getLastName());
+
+        ComboBox<String> departmentBox = new ComboBox<>(FXCollections.observableArrayList(DEPARTMENT_OPTIONS));
+        departmentBox.setValue(selected.getDepartment());
+        departmentBox.setMaxWidth(Double.MAX_VALUE);
+
+        TextField positionField = new TextField(selected.getPosition());
+        TextField emailField = new TextField(selected.getEmail());
+        TextField contactNumberField = new TextField(selected.getContactNumber());
+
+        ComboBox<Supervisor> supervisorBox = new ComboBox<>(FXCollections.observableArrayList(supervisorRepository.findActiveSupervisors()));
+        supervisorBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Supervisor supervisor) {
+                return supervisor == null ? "" : supervisor.getFullName();
+            }
+            @Override
+            public Supervisor fromString(String string) { return null; }
+        });
+
+        // Pre-select supervisor if they have one
+// Pre-select supervisor if they have one
+        if (selected.getSupervisorId() != null && selected.getSupervisorId() != 0) {
+            supervisorBox.getItems().stream()
+                    .filter(s -> s.getSupervisorId() == selected.getSupervisorId())
+                    .findFirst()
+                    .ifPresent(supervisorBox::setValue);
+        }
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20, 150, 10, 10));
+        grid.add(new Label("Employee ID:"), 0, 0); grid.add(employeeIdField, 1, 0);
+        grid.add(new Label("First Name:"), 0, 1); grid.add(firstNameField, 1, 1);
+        grid.add(new Label("Last Name:"), 0, 2); grid.add(lastNameField, 1, 2);
+        grid.add(new Label("Department:"), 0, 3); grid.add(departmentBox, 1, 3);
+        grid.add(new Label("Position:"), 0, 4); grid.add(positionField, 1, 4);
+        grid.add(new Label("Email:"), 0, 5); grid.add(emailField, 1, 5);
+        grid.add(new Label("Contact No.:"), 0, 6); grid.add(contactNumberField, 1, 6);
+        grid.add(new Label("Supervisor:"), 0, 7); grid.add(supervisorBox, 1, 7);
+
+        dialog.getDialogPane().setContent(grid);
+
+        javafx.scene.Node saveButton = dialog.getDialogPane().lookupButton(saveButtonType);
+
+        Runnable checkFields = () -> {
+            boolean ready = !firstNameField.getText().trim().isEmpty()
+                    && !lastNameField.getText().trim().isEmpty()
+                    && departmentBox.getValue() != null
+                    && !positionField.getText().trim().isEmpty()
+                    && !emailField.getText().trim().isEmpty()
+                    && !contactNumberField.getText().trim().isEmpty();
+            saveButton.setDisable(!ready);
+        };
+
+        firstNameField.textProperty().addListener((obs, o, n) -> checkFields.run());
+        lastNameField.textProperty().addListener((obs, o, n) -> checkFields.run());
+        departmentBox.valueProperty().addListener((obs, o, n) -> checkFields.run());
+        positionField.textProperty().addListener((obs, o, n) -> checkFields.run());
+        emailField.textProperty().addListener((obs, o, n) -> checkFields.run());
+        contactNumberField.textProperty().addListener((obs, o, n) -> checkFields.run());
+
+        saveButton.addEventFilter(ActionEvent.ACTION, event -> {
+            String validationError = validateTextFields(
+                    firstNameField.getText().trim(), lastNameField.getText().trim(),
+                    positionField.getText().trim(), contactNumberField.getText().trim(),
+                    emailField.getText().trim()
+            );
+            if (validationError != null) {
+                showError("Invalid Input", validationError);
+                event.consume();
+            }
+        });
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton != saveButtonType) return null;
+            Supervisor selectedSupervisor = supervisorBox.getValue();
+            return new Employee(
+                    employeeIdField.getText().trim(),
+                    firstNameField.getText().trim(),
+                    lastNameField.getText().trim(),
+                    departmentBox.getValue(),
+                    positionField.getText().trim(),
+                    emailField.getText().trim(),
+                    contactNumberField.getText().trim(),
+                    selected.getStatus(), // Keep their current status
+                    selectedSupervisor == null ? null : selectedSupervisor.getSupervisorId(),
+                    selectedSupervisor == null ? "" : selectedSupervisor.getFullName()
+            );
+        });
+
+        dialog.showAndWait().ifPresent(updatedEmployee -> {
+            // NOTE: You will need an updateEmployee method in your EmployeeRepository
+            boolean success = employeeRepository.updateEmployee(updatedEmployee);
+            if (success) {
+                loadEmployeesFromDatabase();
+                showInfo("Employee Updated", updatedEmployee.getFullName() + "'s data has been updated.");
+                statusLabel.setText("Updated: " + updatedEmployee.getFullName());
+                statusLabel.setStyle("-fx-text-fill: #008000;");
+            } else {
+                showError("Database Error", "Failed to update employee information.");
+            }
+        });
+    }
+    @FXML
+    private void deleteSelectedEmployee() {
+        Employee selected = employeeTable.getSelectionModel().getSelectedItem();
+
+        if (selected == null) {
+            showError("No Employee Selected", "Please select an employee from the table first.");
+            return;
+        }
+
+        // 🟢 NEW RULE: Employee MUST be Deactivated (Inactive) first
+        if (!"Inactive".equalsIgnoreCase(selected.getStatus())) {
+            showError("Action Denied", "You can only delete an employee after they have been deactivated.\n\nPlease deactivate "
+                    + selected.getFullName() + " first.");
+            return;
+        }
+
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Permanent Deletion");
+        confirmation.setHeaderText("Data Privacy & Management");
+        confirmation.setContentText("Are you absolutely sure you want to delete the record for "
+                + selected.getFullName() + "?\n\nThis action will permanently remove their employee data AND all of their previously issued pass slips from the system. This cannot be undone.");
+
+        confirmation.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                boolean deleted = employeeRepository.deleteEmployee(selected.getEmployeeId());
+
+                if (deleted) {
+                    loadEmployeesFromDatabase();
+                    statusLabel.setText("Deleted employee: " + selected.getFullName());
+                    statusLabel.setStyle("-fx-text-fill: #008000;");
+                    showInfo("Record Deleted", "The employee and all associated pass slips have been permanently deleted.");
+                } else {
+                    statusLabel.setText("Failed to delete employee.");
+                    statusLabel.setStyle("-fx-text-fill: #cc0000;");
+                    showError("Database Error", "Failed to delete employee. Please check the console for details.");
+                }
+            }
+        });
+    }
 
     private void setupSearch() {
         searchField.textProperty().addListener((observable, oldValue, newValue) -> applyFilter());
     }
+
 
     private void applyFilter() {
         String query = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();

@@ -47,6 +47,11 @@
                 </items>
             </MenuButton>
 
+            <Button text="Edit Details"
+                    onAction="#editSelectedEmployee"
+                    style="-fx-background-color: #f1f5f9; -fx-border-color: #cbd5e1; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-text-fill: #334155; -fx-font-weight: bold; -fx-padding: 8 16;"
+                    prefHeight="38" />
+
             <Button text="Deactivate"
                     onAction="#deactivateSelectedEmployee"
                     style="-fx-background-color: #fef2f2; -fx-border-color: #fecaca; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-text-fill: #dc2626; -fx-font-weight: bold; -fx-padding: 8 16;"
@@ -55,6 +60,11 @@
             <Button text="Reactivate"
                     onAction="#reactivateSelectedEmployee"
                     style="-fx-background-color: #ecfdf5; -fx-border-color: #bbf7d0; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-text-fill: #059669; -fx-font-weight: bold; -fx-padding: 8 16;"
+                    prefHeight="38" />
+
+            <Button text="Delete Permanently"
+                    onAction="#deleteSelectedEmployee"
+                    style="-fx-background-color: #fff5f5; -fx-border-color: #fee2e2; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-text-fill: #991b1b; -fx-font-weight: bold; -fx-padding: 8 16;"
                     prefHeight="38" />
         </HBox>
 
