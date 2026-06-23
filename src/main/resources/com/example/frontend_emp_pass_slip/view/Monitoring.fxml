@@ -62,11 +62,11 @@
                 <TableColumn fx:id="nameColumn" text="Name" prefWidth="145" />
                 <TableColumn fx:id="departmentColumn" text="Department" prefWidth="110" />
                 <TableColumn fx:id="dateColumn" text="Date" prefWidth="110" />
-                <TableColumn fx:id="timeRequestedColumn" text="Time Requested" prefWidth="120" />
-                <TableColumn fx:id="timeOutColumn" text="Time Out" prefWidth="92" />
-                <TableColumn fx:id="timeInColumn" text="Time In" prefWidth="110" />
-                <TableColumn fx:id="statusColumn" text="Status" prefWidth="85" />
-                <TableColumn fx:id="actionColumn" text="Action" prefWidth="100" />
+                <TableColumn fx:id="timeRequestedColumn" text="Time Requested" prefWidth="120" style="-fx-alignment: CENTER;"  />
+                <TableColumn fx:id="timeOutColumn" text="Time Out" prefWidth="92" style="-fx-alignment: CENTER;"  />
+                <TableColumn fx:id="timeInColumn" text="Time In" prefWidth="110" style="-fx-alignment: CENTER;"  />
+                <TableColumn fx:id="statusColumn" text="Status" prefWidth="85" style="-fx-alignment: CENTER;" />
+                <TableColumn fx:id="actionColumn" text="Action" prefWidth="100" style="-fx-alignment: CENTER;"  />
             </columns>
         </TableView>
         <Label fx:id="countLabel" styleClass="muted-text" />
