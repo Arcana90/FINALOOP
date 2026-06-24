@@ -18,7 +18,7 @@
         <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400" style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
             <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
                 <Label fx:id="totalEmployeesLabel" text="6" styleClass="dashboard-stat-number" />
-                <Label text="Total Records" styleClass="dashboard-stat-label" />
+                <Label text="Total slip issue today" styleClass="dashboard-stat-label" />
             </VBox>
             <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #2563eb; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
                 <Label text="👥" styleClass="dashboard-card-icon-text" />
@@ -57,15 +57,12 @@
 
         <TableView fx:id="monitoringTable" styleClass="employee-table" VBox.vgrow="ALWAYS">
             <columns>
-                <TableColumn fx:id="slipNoColumn" text="Slip No." prefWidth="125" />
-                <TableColumn fx:id="employeeIdColumn" text="Employee ID" prefWidth="115" />
-                <TableColumn fx:id="nameColumn" text="Name" prefWidth="145" />
-                <TableColumn fx:id="departmentColumn" text="Department" prefWidth="110" />
-                <TableColumn fx:id="dateColumn" text="Date" prefWidth="110" />
-                <TableColumn fx:id="timeRequestedColumn" text="Time Requested" prefWidth="120" style="-fx-alignment: CENTER;"  />
-                <TableColumn fx:id="timeOutColumn" text="Time Out" prefWidth="92" style="-fx-alignment: CENTER;"  />
+                <TableColumn fx:id="slipNoColumn" text="Slip No." prefWidth="125" style="-fx-alignment: CENTER;" />
+                <TableColumn fx:id="employeeIdColumn" text="Employee ID" prefWidth="115" style="-fx-alignment: CENTER;" />
+                <TableColumn fx:id="nameColumn" text="Name" prefWidth="200" style="-fx-alignment: CENTER;" />
+                <TableColumn fx:id="timeOutColumn" text="Time Out" prefWidth="110" style="-fx-alignment: CENTER;"  />
                 <TableColumn fx:id="timeInColumn" text="Time In" prefWidth="110" style="-fx-alignment: CENTER;"  />
-                <TableColumn fx:id="statusColumn" text="Status" prefWidth="85" style="-fx-alignment: CENTER;" />
+                <TableColumn fx:id="statusColumn" text="Status" prefWidth="100" style="-fx-alignment: CENTER;" />
                 <TableColumn fx:id="actionColumn" text="Action" prefWidth="100" style="-fx-alignment: CENTER;"  />
             </columns>
         </TableView>

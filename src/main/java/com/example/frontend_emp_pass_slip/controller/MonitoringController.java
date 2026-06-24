@@ -37,17 +37,10 @@ public class MonitoringController {
     @FXML private TableView<PassSlipMonitoringRecord> monitoringTable;
     @FXML private TableColumn<PassSlipMonitoringRecord, String> slipNoColumn;
     @FXML private TableColumn<PassSlipMonitoringRecord, String> employeeIdColumn;
-    @FXML private TableColumn<PassSlipMonitoringRecord, String> departmentColumn;
-    @FXML private TableColumn<PassSlipMonitoringRecord, String> dateColumn;
     @FXML private TableColumn<PassSlipMonitoringRecord, String> nameColumn;
-
-    // NEW FIELDS
-    @FXML private TableColumn<PassSlipMonitoringRecord, String> timeRequestedColumn;
     @FXML private TableColumn<PassSlipMonitoringRecord, String> timeOutColumn;
     @FXML private TableColumn<PassSlipMonitoringRecord, String> timeInColumn;
     @FXML private TableColumn<PassSlipMonitoringRecord, String> statusColumn;
-
-    // ACTION COLUMN
     @FXML private TableColumn<PassSlipMonitoringRecord, Void> actionColumn;
 
     private final MonitoringJdbcRepository monitoringRepository = new MonitoringJdbcRepository();
@@ -61,7 +54,6 @@ public class MonitoringController {
 
         monitoringTable.setOnMouseClicked(event -> {
             PassSlipMonitoringRecord selected = monitoringTable.getSelectionModel().getSelectedItem();
-
             if (event.getClickCount() == 2 && selected != null && "Out".equalsIgnoreCase(selected.getStatus())) {
                 showTimeInDialog(selected);
             }
@@ -72,99 +64,71 @@ public class MonitoringController {
         slipNoColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getSlipNo()));
         employeeIdColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getEmployeeId()));
         nameColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getName()));
-        departmentColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getDepartment()));
-        // Removed durationColumn mapping
         statusColumn.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getStatus()));
-
-        dateColumn.setCellValueFactory(data ->
-                new ReadOnlyStringWrapper(AppSettingsManager.getInstance().formatDateString(data.getValue().getDate())));
-
-        timeRequestedColumn.setCellValueFactory(data ->
-                new ReadOnlyStringWrapper(AppSettingsManager.getInstance().formatTimeString(data.getValue().getTimeRequested())));
 
         timeOutColumn.setCellValueFactory(data ->
                 new ReadOnlyStringWrapper(AppSettingsManager.getInstance().formatTimeString(data.getValue().getTimeOut())));
-
         timeInColumn.setCellValueFactory(data ->
                 new ReadOnlyStringWrapper(AppSettingsManager.getInstance().formatTimeString(data.getValue().getTimeIn())));
 
-        // UPDATED: Action Column (Renders the Cancel Button)
-// UPDATED: Action Column (Renders the Cancel Button - Filter Proof!)
+        // Action Column: Only shows a "View" button for the Admin
         actionColumn.setCellFactory(param -> new TableCell<>() {
-            private final Button cancelBtn = new Button("Cancel");
-
+            private final Button viewBtn = new Button("View");
             {
-                // Styling it red for danger/cancel action
-                cancelBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-cursor: hand;");
-                cancelBtn.setOnAction(event -> {
-                    // FIX 1: Get the item directly from the row, not the table index
+                viewBtn.setStyle("-fx-background-color: #f8fafc; -fx-border-color: #cbd5e1; -fx-cursor: hand;");
+                viewBtn.setOnAction(event -> {
                     if (getTableRow() != null && getTableRow().getItem() != null) {
                         PassSlipMonitoringRecord record = (PassSlipMonitoringRecord) getTableRow().getItem();
-                        handleCancellation(record);
+                        handleView(record);
                     }
                 });
             }
-
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-
-                // FIX 2: Strict null checking for empty rows during filtering
                 if (empty || getTableRow() == null || getTableRow().getItem() == null) {
                     setGraphic(null);
                 } else {
-                    PassSlipMonitoringRecord record = (PassSlipMonitoringRecord) getTableRow().getItem();
-
-                    // ONLY show the button if the status is "For Approval"
-                    if ("For Approval".equalsIgnoreCase(record.getStatus())) {
-                        setGraphic(cancelBtn);
-                    } else {
-                        setGraphic(null); // Explicitly clear it for other statuses
-                    }
+                    setGraphic(viewBtn);
                 }
             }
         });
     }
 
-    private void handleCancellation(PassSlipMonitoringRecord record) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Cancel Pass Slip");
-        confirm.setHeaderText("Cancel Pass Slip: " + record.getSlipNo());
-        confirm.setContentText("Are you sure you want to cancel this pass slip request for " + record.getName() + "?\n\nThis action cannot be undone.");
+    private void handleView(PassSlipMonitoringRecord record) {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/com/example/frontend_emp_pass_slip/view/AdminPassSlipDetailModal.fxml"));
+            javafx.scene.Parent root = loader.load();
 
-        confirm.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                // Call the repository to cancel it in the database
-                boolean success = monitoringRepository.cancelPassSlip(record.getPassSlipId());
+            AdminPassSlipDetailModalController controller = loader.getController();
+            controller.setRecord(record);
 
-                if (success) {
-                    showInfo("Cancelled", "Pass slip request cancelled successfully.");
-                    loadRecordsFromDatabase();
-                } else {
-                    showError("Error", "Failed to cancel pass slip.");
-                }
-            }
-        });
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            stage.setTitle("Review Pass Slip Authorization");
+            stage.setScene(new javafx.scene.Scene(root));
+            stage.setResizable(false);
+
+            stage.showAndWait();
+
+            // REAL-TIME REFRESH: Reload data when the modal closes
+            loadRecordsFromDatabase();
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Error", "Could not open pass slip details.");
+        }
     }
 
     private void setupFilters() {
-        // ADDED: "For Approval" to the filter dropdown
         statusFilter.setItems(FXCollections.observableArrayList(
-                "All Status", "For Approval", "Out", "Returned", "Cancelled", "AWOL", "Rejected"
+                "All Status", "For Approval", "Approved", "Out", "Returned", "Cancelled", "AWOL", "Rejected"
         ));
-
         statusFilter.getSelectionModel().selectFirst();
 
-        FilteredList<PassSlipMonitoringRecord> filtered =
-                new FilteredList<>(records, record -> true);
+        FilteredList<PassSlipMonitoringRecord> filtered = new FilteredList<>(records, record -> true);
 
-        searchField.textProperty().addListener((observable, oldValue, newValue) ->
-                applyFilters(filtered)
-        );
-
-        statusFilter.valueProperty().addListener((observable, oldValue, newValue) ->
-                applyFilters(filtered)
-        );
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> applyFilters(filtered));
+        statusFilter.valueProperty().addListener((observable, oldValue, newValue) -> applyFilters(filtered));
 
         filtered.addListener((javafx.collections.ListChangeListener<PassSlipMonitoringRecord>) change ->
                 updateCount(filtered.size())
@@ -174,47 +138,39 @@ public class MonitoringController {
     }
 
     private void loadRecordsFromDatabase() {
-        records.setAll(monitoringRepository.findAll());
+        String todayString = java.time.LocalDate.now().toString();
+
+        // ONLY load today's records
+        java.util.List<PassSlipMonitoringRecord> dailyRecords = monitoringRepository.findAll().stream()
+                .filter(r -> r.getDate() != null && r.getDate().toString().equals(todayString))
+                .toList();
+
+        records.setAll(dailyRecords);
         updateCount(records.size());
         updateStatistics();
     }
 
     private void updateStatistics() {
-        long totalRecords = records.size();
+        long totalIssuedToday = records.size();
+        long currentlyOutToday = records.stream().filter(r -> "Out".equalsIgnoreCase(r.getStatus())).count();
+        long returnedToday = records.stream().filter(r -> "Returned".equalsIgnoreCase(r.getStatus())).count();
 
-        // Let's use activePassSlipsLabel to track things awaiting approval instead of "out"
-        long pendingApproval = records.stream()
-                .filter(r -> "For Approval".equalsIgnoreCase(r.getStatus()))
-                .count();
-
-        long currentlyOut = records.stream()
-                .filter(r -> "Out".equalsIgnoreCase(r.getStatus()))
-                .count();
-
-        totalEmployeesLabel.setText(String.valueOf(totalRecords));
-        activePassSlipsLabel.setText(String.valueOf(pendingApproval)); // Showing pending approvals
-        totalRecordsLabel.setText(String.valueOf(currentlyOut));       // Showing currently out
+        totalEmployeesLabel.setText(String.valueOf(totalIssuedToday));
+        activePassSlipsLabel.setText(String.valueOf(currentlyOutToday));
+        totalRecordsLabel.setText(String.valueOf(returnedToday));
     }
 
     private void applyFilters(FilteredList<PassSlipMonitoringRecord> filtered) {
-        String query = searchField.getText() == null
-                ? ""
-                : searchField.getText().trim().toLowerCase();
-
-        String status = statusFilter.getValue() == null
-                ? "All Status"
-                : statusFilter.getValue();
+        String query = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();
+        String status = statusFilter.getValue() == null ? "All Status" : statusFilter.getValue();
 
         filtered.setPredicate(record -> {
             boolean matchesQuery = query.isEmpty()
                     || record.getName().toLowerCase().contains(query)
                     || record.getSlipNo().toLowerCase().contains(query)
-                    || record.getEmployeeId().toLowerCase().contains(query)
-                    || record.getDepartment().toLowerCase().contains(query);
+                    || record.getEmployeeId().toLowerCase().contains(query);
 
-            boolean matchesStatus =
-                    "All Status".equals(status) || record.getStatus().equalsIgnoreCase(status);
-
+            boolean matchesStatus = "All Status".equals(status) || record.getStatus().equalsIgnoreCase(status);
             return matchesQuery && matchesStatus;
         });
     }
@@ -233,18 +189,15 @@ public class MonitoringController {
         form.setVgap(12);
         form.setPadding(new Insets(8, 10, 4, 10));
 
-        ComboBox<String> remarks = new ComboBox<>(FXCollections.observableArrayList(
-                "Returned"
-        ));
+        ComboBox<String> remarks = new ComboBox<>(FXCollections.observableArrayList("Returned"));
         remarks.getSelectionModel().selectFirst();
 
         String formattedTimeOut = AppSettingsManager.getInstance().formatTimeString(record.getTimeOut());
 
         form.addRow(0, new Label("Slip No:"), new Label(record.getSlipNo()));
         form.addRow(1, new Label("Employee Name:"), new Label(record.getName()));
-        form.addRow(2, new Label("Department:"), new Label(record.getDepartment()));
-        form.addRow(3, new Label("Time Out:"), new Label(formattedTimeOut));
-        form.addRow(4, new Label("Remarks:"), remarks);
+        form.addRow(2, new Label("Time Out:"), new Label(formattedTimeOut));
+        form.addRow(3, new Label("Remarks:"), remarks);
 
         dialog.getDialogPane().setContent(form);
 
@@ -254,7 +207,6 @@ public class MonitoringController {
         dialog.showAndWait().ifPresent(response -> {
             if (response == confirmButtonType) {
                 boolean updated = monitoringRepository.markAsReturned(record.getPassSlipId());
-
                 if (updated) {
                     loadRecordsFromDatabase();
                     showInfo("Time-In Recorded", "Employee has been marked as returned.");
@@ -279,7 +231,6 @@ public class MonitoringController {
         alert.getButtonTypes().setAll(pdfButton, csvButton, cancelButton);
 
         Optional<ButtonType> result = alert.showAndWait();
-
         if (result.isPresent()) {
             if (result.get() == pdfButton) {
                 exportToPdf();
@@ -294,7 +245,6 @@ public class MonitoringController {
         fileChooser.setTitle("Save PDF File");
         fileChooser.setInitialFileName("PassSlip_Monitoring_Report.pdf");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
-
         File file = fileChooser.showSaveDialog(monitoringTable.getScene().getWindow());
 
         if (file != null) {
@@ -326,12 +276,9 @@ public class MonitoringController {
                         pdfTable.addCell(dataCell);
                     }
                 }
-
                 document.add(pdfTable);
                 document.close();
-
                 showInfo("Export Successful", "PDF file successfully saved to:\n" + file.getAbsolutePath());
-
             } catch (Exception e) {
                 showError("Export Failed", "An error occurred while generating the PDF:\n" + e.getMessage());
                 e.printStackTrace();
@@ -344,7 +291,6 @@ public class MonitoringController {
         fileChooser.setTitle("Save CSV File");
         fileChooser.setInitialFileName("PassSlip_Monitoring_Export.csv");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
-
         File file = fileChooser.showSaveDialog(monitoringTable.getScene().getWindow());
 
         if (file != null) {
@@ -358,7 +304,6 @@ public class MonitoringController {
                 for (PassSlipMonitoringRecord item : monitoringTable.getItems()) {
                     StringBuilder dataLine = new StringBuilder();
                     for (TableColumn<PassSlipMonitoringRecord, ?> column : monitoringTable.getColumns()) {
-
                         String cellValue = "";
                         if (column.getCellObservableValue(item) != null && column.getCellObservableValue(item).getValue() != null) {
                             cellValue = column.getCellObservableValue(item).getValue().toString();
@@ -368,9 +313,7 @@ public class MonitoringController {
                     }
                     writer.println(dataLine.substring(0, dataLine.length() - 1));
                 }
-
                 showInfo("Export Successful", "CSV file successfully saved to:\n" + file.getAbsolutePath());
-
             } catch (Exception e) {
                 showError("Export Failed", "An error occurred while saving the file:\n" + e.getMessage());
             }
