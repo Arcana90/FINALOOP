@@ -88,5 +88,8 @@ public class HelloApplication extends Application {
 
     public static void main(String[] args) {
         launch();
+        String hash = backend.auth.PasswordHasher.getInstance().hash("12345".toCharArray());
+        System.out.println(hash);
+
     }
 }

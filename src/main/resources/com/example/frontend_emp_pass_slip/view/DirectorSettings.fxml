@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent;" styleClass="dashboard-scroll"
+            xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.frontend_emp_pass_slip.controller.DirectorSettingsController"
+            stylesheets="@../css/style.css">
+
+    <VBox spacing="20" styleClass="screen">
+        <padding>
+            <Insets bottom="18" left="18" right="18" top="18" />
+        </padding>
+
+        <VBox spacing="4">
+            <Label text="Settings" styleClass="employee-page-title" />
+            <Label text="System configuration and preferences" styleClass="employee-page-subtitle" />
+        </VBox>
+
+        <VBox maxWidth="590" styleClass="table-panel">
+            <Label fx:id="accountHeaderLabel" text="Administrator Account" styleClass="section-title" style="-fx-padding: 20 20 16 20;" />
+            <Pane style="-fx-background-color: #e5e7eb;" prefHeight="1" />
+
+            <VBox spacing="16" style="-fx-padding: 20;">
+                <HBox alignment="CENTER_LEFT" spacing="16">
+                    <StackPane fx:id="avatarPane" styleClass="dashboard-card-icon" style="-fx-background-color: #2563eb; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
+                        <Label fx:id="avatarLabel" text="A" styleClass="dashboard-card-icon-text" />
+                    </StackPane>
+                    <VBox spacing="2">
+                        <Label fx:id="nameLabel" text="Admin" style="-fx-font-weight: bold;" />
+                        <Label fx:id="subtitleLabel" text="System Administrator · HR Division" styleClass="muted-text" />
+                        <Label fx:id="lastLoginLabel" text="Last login: 06/17/2026, 03:18 AM" styleClass="muted-text" />
+                    </VBox>
+                </HBox>
+
+                <GridPane hgap="12" vgap="12">
+                    <VBox style="-fx-background-color: #f9fafb; -fx-padding: 10; -fx-background-radius: 8;" GridPane.columnIndex="0" GridPane.rowIndex="0" prefWidth="260">
+                        <Label text="Username" styleClass="dashboard-stat-label" />
+                        <Label fx:id="usernameLabel" text="admin" style="-fx-font-weight: bold;" />
+                    </VBox>
+                    <VBox style="-fx-background-color: #f9fafb; -fx-padding: 10; -fx-background-radius: 8;" GridPane.columnIndex="1" GridPane.rowIndex="0" prefWidth="260">
+                        <Label text="Role" styleClass="dashboard-stat-label" />
+                        <Label fx:id="roleLabel" text="System Administrator" style="-fx-font-weight: bold;" />
+                    </VBox>
+                    <VBox style="-fx-background-color: #f9fafb; -fx-padding: 10; -fx-background-radius: 8;" GridPane.columnIndex="0" GridPane.rowIndex="1" prefWidth="260">
+                        <Label text="Department" styleClass="dashboard-stat-label" />
+                        <Label fx:id="departmentLabel" text="HR Division" style="-fx-font-weight: bold;" />
+                    </VBox>
+                    <VBox style="-fx-background-color: #f9fafb; -fx-padding: 10; -fx-background-radius: 8;" GridPane.columnIndex="1" GridPane.rowIndex="1" prefWidth="260">
+                        <Label text="Access Level" styleClass="dashboard-stat-label" />
+                        <Label fx:id="accessLevelLabel" text="Full Access" style="-fx-font-weight: bold;" />
+                    </VBox>
+                </GridPane>
+            </VBox>
+        </VBox>
+
+        <VBox fx:id="configPanel" maxWidth="590" styleClass="table-panel">
+            <Label text="System Configuration" styleClass="section-title" style="-fx-padding: 20 20 16 20;" />
+            <Pane style="-fx-background-color: #e5e7eb;" prefHeight="1" />
+
+            <VBox spacing="10" style="-fx-padding: 20;">
+                <Label text="Default Time Format" styleClass="dashboard-stat-label" />
+                <ComboBox fx:id="timeFormatComboBox" maxWidth="Infinity" prefHeight="35" />
+                <Label text="Date Format" styleClass="dashboard-stat-label" />
+                <ComboBox fx:id="dateFormatComboBox" maxWidth="Infinity" prefHeight="35" />
+                <Label text="Auto-logout Timer (minutes)" styleClass="dashboard-stat-label" />
+                <TextField fx:id="autoLogoutField" prefHeight="35" text="30" />
+                <Button onAction="#saveSettings" prefHeight="35" maxWidth="Infinity" styleClass="primary-button" text="Save Settings" />
+                <Label fx:id="statusLabel" wrapText="true" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-padding: 2 0 0 0;" />
+            </VBox>
+        </VBox>
+
+        <VBox maxWidth="590" styleClass="table-panel">
+            <Label text="Security" styleClass="section-title" style="-fx-padding: 20 20 16 20;" />
+            <Pane style="-fx-background-color: #e5e7eb;" prefHeight="1" />
+
+            <VBox spacing="8" style="-fx-padding: 20;">
+                <Button maxWidth="Infinity" onAction="#changePassword" prefHeight="35" styleClass="outline-button" text="Change Password" />
+                <Button fx:id="activityLogBtn" maxWidth="Infinity" onAction="#viewActivityLog" prefHeight="35" styleClass="outline-button" text="View Activity Log" />
+                <Button fx:id="backupDbBtn" maxWidth="Infinity" onAction="#backupDatabase" prefHeight="35" styleClass="outline-button" text="Backup Database" />
+            </VBox>
+        </VBox>
+    </VBox>
+
+</ScrollPane>

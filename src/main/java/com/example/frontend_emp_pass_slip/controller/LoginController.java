@@ -1,6 +1,5 @@
 package com.example.frontend_emp_pass_slip.controller;
 
-import backend.app.SessionManager;
 import backend.app.AppSettingsManager;
 import backend.auth.PasswordHasher;
 import backend.db.ConnectionPoolManager;
@@ -22,6 +21,7 @@ import java.util.Arrays;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Button;
+import backend.auth.SessionManager;
 
 public class LoginController {
     @FXML private TextField usernameField;
@@ -95,7 +95,6 @@ public class LoginController {
     private void initialize() {
         // Run standard configurations to ensure text turns white immediately on setup
         handleRoleChange();
-        SessionManager.getInstance().setCurrentUser(usernameField.getText());
     }
 
     @FXML
@@ -150,7 +149,7 @@ public class LoginController {
 
                         // 👇 If password is valid, initialize the active session context
                         if (isValid) {
-                            backend.auth.SessionManager.getInstance().createSession(null, role, username);
+                            SessionManager.getInstance().createSession(null, role, username);
                             return true;
                         }
                     }

@@ -4,9 +4,10 @@ import backend.app.SessionManager;
 
 public class GuardSettingsController extends BaseSettingsController {
 
+    // Inside EACH of these three files, make sure this method looks exactly like this:
     @Override
     protected String getCurrentUsername() {
-        return SessionManager.getInstance().getCurrentUser();
+        return backend.auth.SessionManager.getInstance().getCurrentUsername();
     }
 
     @Override

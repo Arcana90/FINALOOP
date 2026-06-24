@@ -65,13 +65,23 @@ public final class PasswordHasher {
      * @return {@code true} if the password matches; {@code false} otherwise
      */
     public boolean verify(char[] plaintext, String storedHash) {
-        if (storedHash == null || !storedHash.contains(SEPARATOR)) return false;
+        if (storedHash == null) return false;
+
+        storedHash = storedHash.trim();
+        if (!storedHash.contains(SEPARATOR)) return false;
+
         String[] parts = storedHash.split("\\$", 2);
         if (parts.length != 2) return false;
-        byte[] salt   = Base64.getDecoder().decode(parts[0]);
-        byte[] expect = Base64.getDecoder().decode(parts[1]);
-        byte[] actual = digest(salt, plaintext);
-        return MessageDigest.isEqual(expect, actual); // constant-time comparison
+
+        try {
+            byte[] salt   = Base64.getDecoder().decode(parts[0].trim());
+            byte[] expect = Base64.getDecoder().decode(parts[1].trim());
+            byte[] actual = digest(salt, plaintext);
+            return MessageDigest.isEqual(expect, actual); // constant-time comparison
+        } catch (IllegalArgumentException e) {
+            // Malformed/corrupted hash in DB — treat as invalid credentials, don't crash
+            return false;
+        }
     }
 
     // ── Private helpers ─────────────────────────────────────────────────────────

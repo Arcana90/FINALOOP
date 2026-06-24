@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.chart.BarChart?>
 <?import javafx.scene.chart.CategoryAxis?>
@@ -15,27 +14,21 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-
 <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="dashboard-scroll"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.example.frontend_emp_pass_slip.controller.ReportsController">
-
 
     <VBox styleClass="screen" spacing="16">
         <padding>
             <Insets top="18" right="18" bottom="18" left="18" />
         </padding>
 
-
         <VBox spacing="4">
             <Label text="Report Generation" styleClass="employee-page-title" />
             <Label text="Pass slip statistics and summary data" styleClass="employee-page-subtitle" />
         </VBox>
 
-
         <HBox spacing="14" alignment="CENTER_LEFT" maxWidth="Infinity">
-
-
             <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
                   style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
                 <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
@@ -46,7 +39,6 @@
                     <Label text="📋" styleClass="dashboard-card-icon-text" />
                 </StackPane>
             </HBox>
-
 
             <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
                   style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
@@ -59,7 +51,6 @@
                 </StackPane>
             </HBox>
 
-
             <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
                   style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
                 <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
@@ -70,7 +61,6 @@
                     <Label text="💼" styleClass="dashboard-card-icon-text" />
                 </StackPane>
             </HBox>
-
 
             <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
                   style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
@@ -84,31 +74,37 @@
             </HBox>
         </HBox>
 
+        <VBox styleClass="table-panel" spacing="12" style="-fx-padding: 16 18 16 18;">
 
-        <VBox styleClass="table-panel" VBox.vgrow="ALWAYS" style="-fx-padding: 16 18 16 18;">
-            <HBox spacing="8" alignment="CENTER_LEFT">
-                <Label text="DAILY ACTIVITY - THIS WEEK" style="-fx-font-weight: bold;"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Button fx:id="dailyBtn" text="Daily" styleClass="primary-button"/>
-                <Button fx:id="monthlyBtn" text="Monthly" styleClass="outline-button"/>
-                <Button fx:id="printBtn" text="Print" styleClass="outline-button"/>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label fx:id="chartTitleLabel" text="DAILY ACTIVITY - THIS WEEK" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="dailyBtn" text="Daily" styleClass="btn-primary" />
+                <Button fx:id="monthlyBtn" text="Monthly" styleClass="btn-secondary" />
+                <Button fx:id="printBtn" text="Print" styleClass="btn-secondary" />
             </HBox>
-            <BarChart fx:id="activityChart" VBox.vgrow="ALWAYS">
-                <xAxis><CategoryAxis fx:id="dayAxis" side="BOTTOM"/></xAxis>
-                <yAxis><NumberAxis fx:id="valueAxis" side="LEFT"/></yAxis>
+
+            <BarChart fx:id="activityChart" prefHeight="260.0" animated="false">
+                <xAxis>
+                    <CategoryAxis side="BOTTOM" />
+                </xAxis>
+                <yAxis>
+                    <NumberAxis side="LEFT" />
+                </yAxis>
             </BarChart>
+
         </VBox>
 
-
         <VBox styleClass="table-panel" VBox.vgrow="ALWAYS" style="-fx-padding: 16 18 16 18;">
-            <Label text="PASS SLIPS BY DEPARTMENT" style="-fx-font-weight: bold; -fx-padding: 0 0 10 0;"/>
+            <Label text="INDIVIDUAL PASS SLIP REPORTING" style="-fx-font-weight: bold; -fx-padding: 0 0 10 0;"/>
             <TableView fx:id="reportsTable" styleClass="employee-table" VBox.vgrow="ALWAYS">
                 <columns>
-                    <TableColumn fx:id="departmentCol" text="Department" prefWidth="250"/>
-                    <TableColumn fx:id="totalCol" text="Total" prefWidth="140"/>
-                    <TableColumn fx:id="officialCol" text="Official" prefWidth="180"/>
-                    <TableColumn fx:id="personalCol" text="Personal" prefWidth="180"/>
-                    <TableColumn fx:id="avgDurationCol" text="Avg Duration" prefWidth="260"/>
+                    <TableColumn fx:id="employeeIdCol" text="Employee ID" prefWidth="150"/>
+                    <TableColumn fx:id="employeeNameCol" text="Employee Name" prefWidth="250"/>
+                    <TableColumn fx:id="personalCol" text="Personal" prefWidth="140"/>
+                    <TableColumn fx:id="officialCol" text="Official Business" prefWidth="160"/>
+                    <TableColumn fx:id="totalCol" text="Total Slips" prefWidth="140"/>
+                    <TableColumn fx:id="actionCol" text="Action" prefWidth="150" style="-fx-alignment: CENTER;"/>
                 </columns>
             </TableView>
         </VBox>

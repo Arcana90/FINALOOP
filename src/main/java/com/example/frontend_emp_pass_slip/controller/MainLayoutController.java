@@ -142,7 +142,28 @@ public class MainLayoutController {
     @FXML
     private void loadSettings() {
         setPageTitle("Settings");
-        loadView("Settings.fxml");
+
+        String role = backend.auth.SessionManager.getInstance().getCurrentUserRole();
+        if (role == null) role = "Admin";
+
+        switch (role) {
+            case "Director":
+            case "Directors":
+                loadView("DirectorSettings.fxml");
+                break;
+
+            case "Guard":
+            case "Guards":
+                loadView("GuardSettings.fxml");
+                break;
+
+            case "Admin":
+            case "Administrators":
+            default:
+                loadView("Settings.fxml");
+                break;
+        }
+
         updateActiveSidebarButton(settingsButton);
     }
 
