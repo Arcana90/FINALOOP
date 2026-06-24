@@ -36,7 +36,12 @@ public class AppSettingsManager {
 
     // Load or refresh data directly from DB cache
     public void refreshSettings() {
-        Map<String, String> settings = repository.loadSettings();
+        // 🌟 UPDATED: Get the current user from SessionManager
+        String currentUser = SessionManager.getInstance().getCurrentUser();
+
+        // 🌟 pass the currentUser to loadSettings
+        Map<String, String> settings = repository.loadSettings(currentUser);
+
         this.timeFormat = settings.getOrDefault("time_format", "24h");
         this.dateFormat = settings.getOrDefault("date_format", "YYYY-MM-DD");
         try {
@@ -69,6 +74,7 @@ public class AppSettingsManager {
         String pattern = dateFormat.replace("YYYY", "yyyy").replace("DD", "dd") + " " + (timeFormat.equals("12h") ? "hh:mm a" : "HH:mm");
         return dateTime.format(DateTimeFormatter.ofPattern(pattern));
     }
+
     public String formatDate(LocalDate date) {
         if (date == null) return "";
         return date.format(getDateFormatter());
@@ -78,6 +84,7 @@ public class AppSettingsManager {
         if (time == null) return "";
         return time.format(getTimeFormatter());
     }
+
     // --- GLOBAL AUTO-LOGOUT MECHANISM ---
     public void registerInactivityTracker(Scene scene, Runnable onLogoutAction) {
         this.logoutRoutine = onLogoutAction;
@@ -113,6 +120,7 @@ public class AppSettingsManager {
             inactivityTimeline.stop();
         }
     }
+
     // --- STRING PARSING HELPERS ---
     public String formatDateString(String dbDate) {
         if (dbDate == null || dbDate.isEmpty() || dbDate.equalsIgnoreCase("null")) return "";
@@ -133,9 +141,9 @@ public class AppSettingsManager {
             return dbTime; // Fallback to raw string if parsing fails
         }
     }
-    // Returns the auto-logout time in minutes. Defaulting to 1 for testing!
+
+    // Returns the auto-logout time in minutes
     public int getAutoLogoutTimer() {
-        // This now returns the actual value loaded from your DB during refreshSettings()
         return this.autoLogoutMinutes;
     }
 }

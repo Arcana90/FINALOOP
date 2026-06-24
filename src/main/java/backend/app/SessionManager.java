@@ -19,9 +19,12 @@ public class SessionManager {
     private Runnable logoutAction;
     private int timeoutMinutes;
 
+    // 🌟 ADDED: Store the currently logged-in username
+    private String currentUser;
+
     private Alert warningDialog;
     private boolean isWarningShowing = false;
-    private boolean isTrackingActive = false; // CRITICAL: Safety guard flag
+    private boolean isTrackingActive = false;
 
     private SessionManager() {}
 
@@ -30,6 +33,16 @@ public class SessionManager {
             instance = new SessionManager();
         }
         return instance;
+    }
+
+    // 🌟 ADDED: Getter and Setter for the current user
+    public void setCurrentUser(String username) {
+        this.currentUser = username;
+    }
+
+    public String getCurrentUser() {
+        // Fallback just in case, though it should always be set at login
+        return currentUser != null ? currentUser : "unknown_user";
     }
 
     public void initialize(Stage stage, int timeoutMinutes, Runnable logoutAction) {
@@ -43,9 +56,9 @@ public class SessionManager {
     }
 
     public void startTimer() {
-        stopTimer(); // Clear any existing routines first
+        stopTimer();
 
-        isTrackingActive = true; // Turn on tracking status
+        isTrackingActive = true;
         timer = new Timer(true);
 
         long timeoutMillis = timeoutMinutes * 60 * 1000L;
@@ -68,7 +81,6 @@ public class SessionManager {
                 Platform.runLater(() -> executeLogout());
             }
         }, timeoutMillis);
-
     }
 
     public void updateTimeout(int newTimeoutMinutes) {
@@ -77,7 +89,7 @@ public class SessionManager {
     }
 
     public void stopTimer() {
-        isTrackingActive = false; // CRITICAL: Stop listening to mouse/key movements
+        isTrackingActive = false;
         if (timer != null) {
             timer.cancel();
             timer.purge();
@@ -86,9 +98,7 @@ public class SessionManager {
     }
 
     public void resetTimer() {
-        // Only reset if tracking is explicitly active and warning isn't showing
         if (!isTrackingActive || isWarningShowing) return;
-
         startTimer();
     }
 
@@ -123,6 +133,9 @@ public class SessionManager {
 
         isWarningShowing = false;
         stopTimer();
+
+        // 🌟 ADDED: Clear the user from memory on logout
+        this.currentUser = null;
 
         if (logoutAction != null) {
             logoutAction.run();

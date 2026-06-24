@@ -46,55 +46,10 @@ public class ReportsJdbcRepository {
             e.printStackTrace();
             return new ReportsStats(0, 0, 0, "0m");
         } finally {
-            ConnectionPoolManager.getInstance().release(connection);
-        }
-    }
-
-    public List<ReportDepartmentSummary> findDepartmentSummaries() {
-        List<ReportDepartmentSummary> summaries = new ArrayList<>();
-        Connection connection = null;
-
-        String sql = """
-                SELECT
-                    e.department,
-                    COUNT(*) AS total_slips,
-                    COUNT(*) FILTER (
-                        WHERE ps.reason_for_leaving ILIKE 'Type: Official Business%'
-                    ) AS official_count,
-                    COUNT(*) FILTER (
-                        WHERE ps.reason_for_leaving ILIKE 'Type: Personal%'
-                    ) AS personal_count,
-                    COALESCE(ROUND(AVG(ps.duration_minutes)), 0) AS avg_duration_minutes
-                FROM pass_slips ps
-                JOIN employees e ON ps.employee_id = e.employee_id
-                GROUP BY e.department
-                ORDER BY total_slips DESC, e.department
-                """;
-
-        try {
-            connection = ConnectionPoolManager.getInstance().acquire();
-
-            try (PreparedStatement statement = connection.prepareStatement(sql);
-                 ResultSet resultSet = statement.executeQuery()) {
-
-                while (resultSet.next()) {
-                    summaries.add(new ReportDepartmentSummary(
-                            resultSet.getString("department"),
-                            resultSet.getInt("total_slips"),
-                            resultSet.getInt("official_count"),
-                            resultSet.getInt("personal_count"),
-                            formatDuration(resultSet.getInt("avg_duration_minutes"))
-                    ));
-                }
+            if (connection != null) {
+                ConnectionPoolManager.getInstance().release(connection);
             }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            ConnectionPoolManager.getInstance().release(connection);
         }
-
-        return summaries;
     }
 
     public List<DailyActivitySummary> findWeeklyDailyActivity() {
@@ -143,7 +98,9 @@ public class ReportsJdbcRepository {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            ConnectionPoolManager.getInstance().release(connection);
+            if (connection != null) {
+                ConnectionPoolManager.getInstance().release(connection);
+            }
         }
 
         return dailySummaries;
@@ -156,7 +113,13 @@ public class ReportsJdbcRepository {
         String sql = """
                 SELECT
                     TRIM(TO_CHAR(date_issued, 'Mon')) AS month_name,
-                    COUNT(*) AS total_slips
+                    COUNT(*) AS total_slips,
+                    COUNT(*) FILTER (
+                        WHERE reason_for_leaving ILIKE 'Type: Official Business%'
+                    ) AS official_count,
+                    COUNT(*) FILTER (
+                        WHERE reason_for_leaving ILIKE 'Type: Personal%'
+                    ) AS personal_count
                 FROM pass_slips
                 WHERE date_issued >= CURRENT_DATE - INTERVAL '1 year'
                 GROUP BY
@@ -177,7 +140,9 @@ public class ReportsJdbcRepository {
                 while (resultSet.next()) {
                     monthlyData.add(new MonthlyActivitySummary(
                             resultSet.getString("month_name"),
-                            resultSet.getInt("total_slips")
+                            resultSet.getInt("total_slips"),
+                            resultSet.getInt("official_count"),
+                            resultSet.getInt("personal_count")
                     ));
                 }
             }
@@ -185,7 +150,9 @@ public class ReportsJdbcRepository {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            ConnectionPoolManager.getInstance().release(connection);
+            if (connection != null) {
+                ConnectionPoolManager.getInstance().release(connection);
+            }
         }
 
         return monthlyData;

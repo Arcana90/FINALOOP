@@ -1,6 +1,6 @@
 package com.example.frontend_emp_pass_slip.controller;
 
-import backend.passslip.PassSlipJdbcRepository; // Assumes your mapping record object lives here
+import backend.passslip.PassSlipJdbcRepository;
 import backend.passslip.PassSlipMonitoringRecord;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -14,7 +14,6 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Callback;
 import backend.passslip.MonitoringJdbcRepository;
-import backend.passslip.PassSlipMonitoringRecord;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,6 +36,7 @@ public class MonitoringDirectorController {
     @FXML private TableColumn<PassSlipMonitoringRecord, Void> resolvedActionCol;
 
     private final MonitoringJdbcRepository repository = new MonitoringJdbcRepository();
+
     @FXML
     private void initialize() {
         configureColumnFactories();
@@ -47,13 +47,13 @@ public class MonitoringDirectorController {
         // Awaiting Approval mapping
         awaitingSlipCol.setCellValueFactory(new PropertyValueFactory<>("slipNo"));
         awaitingEmpIdCol.setCellValueFactory(new PropertyValueFactory<>("employeeId"));
-        awaitingNameCol.setCellValueFactory(new PropertyValueFactory<>("name")); // 🟢 Changed from "fullName" to "name"
+        awaitingNameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         addButtonToTable(awaitingActionCol);
 
         // Resolved mapping
         resolvedSlipCol.setCellValueFactory(new PropertyValueFactory<>("slipNo"));
         resolvedEmpIdCol.setCellValueFactory(new PropertyValueFactory<>("employeeId"));
-        resolvedNameCol.setCellValueFactory(new PropertyValueFactory<>("name")); // 🟢 Changed from "fullName" to "name"
+        resolvedNameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         resolvedStatusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
 
         // Add dynamic CSS styling badges to the Status column
@@ -81,9 +81,13 @@ public class MonitoringDirectorController {
     }
 
     public void refreshDashboardData() {
-        List<PassSlipMonitoringRecord> activeDataset = repository.getAllMonitoringRecords();
+        // 🟢 DATE FILTER APPLIED HERE
+        String todayString = java.time.LocalDate.now().toString();
 
-        // 🟢 CHANGE "FOR_APPROVAL" TO "For Approval"
+        List<PassSlipMonitoringRecord> activeDataset = repository.getAllMonitoringRecords().stream()
+                .filter(r -> r.getDate() != null && r.getDate().toString().equals(todayString))
+                .toList();
+
         List<PassSlipMonitoringRecord> pendingGroup = activeDataset.stream()
                 .filter(r -> "For Approval".equalsIgnoreCase(r.getStatus()))
                 .toList();
@@ -133,7 +137,6 @@ public class MonitoringDirectorController {
 
             dialogStage.setScene(new Scene(loader.load()));
 
-            // Pass raw record fields down directly to modal window controller
             PassSlipDetailModalController structuralController = loader.getController();
             structuralController.setPassSlipData(record, this, dialogStage);
 
@@ -142,5 +145,4 @@ public class MonitoringDirectorController {
             e.printStackTrace();
         }
     }
-
 }

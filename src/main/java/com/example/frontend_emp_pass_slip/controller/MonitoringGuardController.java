@@ -51,7 +51,6 @@ public class MonitoringGuardController {
         timeOutColumn.setCellValueFactory(new PropertyValueFactory<>("timeOut"));
         timeInColumn.setCellValueFactory(new PropertyValueFactory<>("timeIn"));
 
-        // Dynamically inject the action buttons based on the record's status
         actionColumn.setCellFactory(param -> new TableCell<>() {
             private final Button btnOut = new Button("Log Time Out");
             private final Button btnIn = new Button("Log Time In");
@@ -60,21 +59,20 @@ public class MonitoringGuardController {
             {
                 pane.setStyle("-fx-alignment: CENTER; -fx-spacing: 10;");
 
-                // Styling the buttons for the Guard UI
                 btnOut.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
                 btnIn.setStyle("-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
 
                 btnOut.setOnAction(event -> {
                     PassSlipMonitoringRecord record = getTableView().getItems().get(getIndex());
                     if (repository.markAsOut(record.getPassSlipId())) {
-                        loadData(); // Refresh the table automatically
+                        loadData();
                     }
                 });
 
                 btnIn.setOnAction(event -> {
                     PassSlipMonitoringRecord record = getTableView().getItems().get(getIndex());
                     if (repository.markAsReturned(record.getPassSlipId())) {
-                        loadData(); // Refresh the table automatically
+                        loadData();
                     }
                 });
             }
@@ -88,7 +86,6 @@ public class MonitoringGuardController {
                     PassSlipMonitoringRecord record = getTableView().getItems().get(getIndex());
                     String status = record.getStatus();
 
-                    // Only show the specific action button the guard needs right now
                     if ("Approved".equalsIgnoreCase(status)) {
                         btnOut.setVisible(true);
                         btnOut.setManaged(true);
@@ -102,7 +99,7 @@ public class MonitoringGuardController {
                         btnIn.setManaged(true);
                         setGraphic(pane);
                     } else {
-                        setGraphic(null); // Leave blank if returned
+                        setGraphic(null);
                     }
                 }
             }
@@ -120,8 +117,11 @@ public class MonitoringGuardController {
     private void loadData() {
         List<PassSlipMonitoringRecord> allRecords = repository.findAll();
 
-        // STRICT FILTER: Guards should NEVER see Pending or Rejected slips.
+        // 🟢 DATE FILTER APPLIED HERE
+        String todayString = java.time.LocalDate.now().toString();
+
         List<PassSlipMonitoringRecord> guardRecords = allRecords.stream()
+                .filter(r -> r.getDate() != null && r.getDate().toString().equals(todayString)) // Must be today's date
                 .filter(r -> "Approved".equalsIgnoreCase(r.getStatus()) ||
                         "Out".equalsIgnoreCase(r.getStatus()) ||
                         "Returned".equalsIgnoreCase(r.getStatus()))
@@ -139,12 +139,10 @@ public class MonitoringGuardController {
             String searchFilter = searchField.getText().toLowerCase();
             String statusCombo = statusFilter.getValue();
 
-            // 1. Check Search Field
             boolean matchesSearch = record.getName().toLowerCase().contains(searchFilter) ||
                     record.getSlipNo().toLowerCase().contains(searchFilter) ||
                     record.getEmployeeId().toLowerCase().contains(searchFilter);
 
-            // 2. Check Combo Box
             boolean matchesStatus = statusCombo.equals("All") || record.getStatus().equalsIgnoreCase(statusCombo);
 
             return matchesSearch && matchesStatus;

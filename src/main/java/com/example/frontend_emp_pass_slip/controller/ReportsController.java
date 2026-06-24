@@ -1,14 +1,11 @@
 package com.example.frontend_emp_pass_slip.controller;
 
-import backend.passslip.ReportDepartmentSummary;
 import backend.passslip.ReportsJdbcRepository;
 import backend.passslip.ReportsStats;
 import backend.passslip.DailyActivitySummary;
 import backend.passslip.MonthlyActivitySummary;
 
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.geometry.Bounds;
@@ -42,21 +39,14 @@ public class ReportsController {
     @FXML private Button monthlyBtn;
     @FXML private Button printBtn;
 
-    // Table
-    @FXML private TableView<ReportDepartmentSummary> reportsTable;
-    @FXML private TableColumn<ReportDepartmentSummary, String> departmentCol;
-    @FXML private TableColumn<ReportDepartmentSummary, Integer> totalCol;
-    @FXML private TableColumn<ReportDepartmentSummary, Integer> officialCol;
-    @FXML private TableColumn<ReportDepartmentSummary, Integer> personalCol;
-    @FXML private TableColumn<ReportDepartmentSummary, String> avgDurationCol;
-
     // Chart
     @FXML private BarChart<String, Number> activityChart;
     @FXML private CategoryAxis dayAxis;
     @FXML private NumberAxis valueAxis;
+
+    // Series for data views
     private final XYChart.Series<String, Number> officialSeries = new XYChart.Series<>();
     private final XYChart.Series<String, Number> personalSeries = new XYChart.Series<>();
-    private final XYChart.Series<String, Number> monthlyTotalSeries = new XYChart.Series<>();
 
     private final ReportsJdbcRepository reportsRepository = new ReportsJdbcRepository();
     private final Popup customPopup = new Popup();
@@ -64,7 +54,6 @@ public class ReportsController {
 
     @FXML
     public void initialize() {
-        setupTableColumns();
         setupChartBase();
         setupButtons();
         loadReportsFromDatabase();
@@ -76,24 +65,15 @@ public class ReportsController {
         printBtn.setOnAction(e -> showPrintOptions());
     }
 
-    private void setupTableColumns() {
-        departmentCol.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getDepartment()));
-        totalCol.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getTotalSlips()));
-        officialCol.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getOfficial()));
-        personalCol.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().getPersonal()));
-        avgDurationCol.setCellValueFactory(data -> new ReadOnlyStringWrapper(data.getValue().getAvgDuration()));
-    }
-
     private void setupChartBase() {
         officialSeries.setName("Official");
         personalSeries.setName("Personal");
-        monthlyTotalSeries.setName("Total Slips");
 
         valueAxis.setAutoRanging(true);
         valueAxis.setTickUnit(1);
         valueAxis.setMinorTickCount(0);
 
-        // --- DISABLE ANIMATIONS TO FIX CHART OVERLAP BUG ---
+        // Disable animations to fix overlapping chart bugs
         activityChart.setAnimated(false);
         dayAxis.setAnimated(false);
         valueAxis.setAnimated(false);
@@ -105,7 +85,6 @@ public class ReportsController {
         currentlyOutLabel.setText(String.valueOf(stats.getCurrentlyOut()));
         officialLabel.setText(String.valueOf(stats.getOfficial()));
         avgDurationLabel.setText(stats.getAvgDuration());
-        reportsTable.setItems(FXCollections.observableArrayList(reportsRepository.findDepartmentSummaries()));
 
         switchToDailyView(); // Default landing view
     }
@@ -120,7 +99,6 @@ public class ReportsController {
         monthlyBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #333333; -fx-border-color: #cccccc; -fx-border-radius: 3;");
 
         activityChart.getData().clear();
-        // Added Sat and Sun here
         dayAxis.setCategories(FXCollections.observableArrayList("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"));
         updateDailyData();
         activityChart.getData().addAll(List.of(officialSeries, personalSeries));
@@ -128,7 +106,7 @@ public class ReportsController {
 
     private void switchToMonthlyView() {
         isDailyView = false;
-        if(chartTitleLabel != null) chartTitleLabel.setText("MONTHLY SUMMARY — YEAR TO DATE");
+        if (chartTitleLabel != null) chartTitleLabel.setText("MONTHLY SUMMARY — YEAR TO DATE");
 
         monthlyBtn.setStyle("-fx-background-color: #2962ff; -fx-text-fill: white;");
         dailyBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #333333; -fx-border-color: #cccccc; -fx-border-radius: 3;");
@@ -138,7 +116,7 @@ public class ReportsController {
                 "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"
         ));
         updateMonthlyData();
-        activityChart.getData().add(monthlyTotalSeries);
+        activityChart.getData().addAll(List.of(officialSeries, personalSeries));
     }
 
     // --- DATA POPULATION ---
@@ -151,7 +129,6 @@ public class ReportsController {
         Map<String, DailyActivitySummary> dataMap = new HashMap<>();
         for (DailyActivitySummary s : dbData) dataMap.put(s.getDay(), s);
 
-        // Added Sat and Sun here
         String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 
         for (String day : days) {
@@ -170,21 +147,29 @@ public class ReportsController {
     }
 
     private void updateMonthlyData() {
-        monthlyTotalSeries.getData().clear();
+        officialSeries.getData().clear();
+        personalSeries.getData().clear();
 
         List<MonthlyActivitySummary> dbData = reportsRepository.findMonthlyActivity();
-        Map<String, Integer> dataMap = new HashMap<>();
-        for (MonthlyActivitySummary s : dbData) dataMap.put(s.getMonth(), s.getTotalSlips());
+        Map<String, MonthlyActivitySummary> dataMap = new HashMap<>();
+        for (MonthlyActivitySummary s : dbData) dataMap.put(s.getMonth(), s);
 
         String[] months = {"Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"};
 
         for (String month : months) {
-            int total = dataMap.getOrDefault(month, 0);
-            XYChart.Data<String, Number> monthData = new XYChart.Data<>(month, total);
-            monthlyTotalSeries.getData().add(monthData);
+            MonthlyActivitySummary summary = dataMap.get(month);
+            int offVal = (summary != null) ? summary.getOfficialCount() : 0;
+            int persVal = (summary != null) ? summary.getPersonalCount() : 0;
+
+            XYChart.Data<String, Number> offData = new XYChart.Data<>(month, offVal);
+            XYChart.Data<String, Number> persData = new XYChart.Data<>(month, persVal);
+
+            officialSeries.getData().add(offData);
+            personalSeries.getData().add(persData);
 
             Platform.runLater(() -> {
-                attachHoverEffect(monthData.getNode(), month, "Total Slips : " + total, null);
+                attachHoverEffect(offData.getNode(), month, "Official : " + offVal, "Personal : " + persVal);
+                attachHoverEffect(persData.getNode(), month, "Official : " + offVal, "Personal : " + persVal);
             });
         }
     }
@@ -259,36 +244,29 @@ public class ReportsController {
             boolean showDialog = job.showPrintDialog(printBtn.getScene().getWindow());
 
             if (showDialog) {
-                // 1. Create a virtual document layout
-                VBox printRoot = new VBox(20); // 20px spacing between elements
+                VBox printRoot = new VBox(20);
                 printRoot.setStyle("-fx-background-color: white; -fx-padding: 30;");
 
-                // 2. Determine Title based on current view
                 String titleText = isDailyView ? "DAILY ACTIVITY - THIS WEEK" : "MONTHLY SUMMARY - YEAR TO DATE";
                 Label titleLabel = new Label(titleText);
                 titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #333333;");
                 printRoot.getChildren().add(titleLabel);
 
-                // 3. Add the Chart Snapshot to the document
                 javafx.scene.SnapshotParameters params = new javafx.scene.SnapshotParameters();
                 params.setFill(javafx.scene.paint.Color.WHITE);
                 javafx.scene.image.WritableImage chartSnapshot = activityChart.snapshot(params, null);
                 javafx.scene.image.ImageView chartImage = new javafx.scene.image.ImageView(chartSnapshot);
                 printRoot.getChildren().add(chartImage);
 
-                // 4. Build and add the Data Table to the document
                 printRoot.getChildren().add(createPrintableTable());
 
-                // 5. Force the layout to render in the background so we can snapshot it
                 new javafx.scene.Scene(printRoot);
                 printRoot.applyCss();
                 printRoot.layout();
 
-                // 6. Snapshot the ENTIRE document (Title + Chart + Table)
                 javafx.scene.image.WritableImage fullPageSnapshot = printRoot.snapshot(params, null);
                 javafx.scene.image.ImageView printImage = new javafx.scene.image.ImageView(fullPageSnapshot);
 
-                // 7. Scale the full document to fit the printer page
                 javafx.print.PageLayout pageLayout = job.getJobSettings().getPageLayout();
                 double printableWidth = pageLayout.getPrintableWidth();
                 double printableHeight = pageLayout.getPrintableHeight();
@@ -303,7 +281,6 @@ public class ReportsController {
                     printImage.setPreserveRatio(true);
                 }
 
-                // 8. Print the scaled document
                 boolean success = job.printPage(printImage);
 
                 if (success) {
@@ -335,7 +312,6 @@ public class ReportsController {
         fileChooser.setTitle("Save Excel Report (CSV)");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files (*.csv)", "*.csv"));
 
-        // Dynamically name the file based on the current view
         String defaultName = isDailyView ? "Daily_Activity_Report.csv" : "Monthly_Summary_Report.csv";
         fileChooser.setInitialFileName(defaultName);
 
@@ -344,45 +320,17 @@ public class ReportsController {
         if (file != null) {
             try (PrintWriter writer = new PrintWriter(file)) {
 
-                // --- 1. WRITE THE TITLE AND CHART DATA ---
-                if (isDailyView) {
-                    writer.println("DAILY ACTIVITY - THIS WEEK");
-                    writer.println(); // Empty line for spacing
-                    writer.println("Day,Official,Personal"); // Headers
+                String headerTitle = isDailyView ? "DAILY ACTIVITY - THIS WEEK" : "MONTHLY SUMMARY - YEAR TO DATE";
+                String categoryLabel = isDailyView ? "Day" : "Month";
 
-                    // Loop through the chart categories
-                    for (String day : dayAxis.getCategories()) {
-                        Number offVal = getSeriesValue(officialSeries, day);
-                        Number persVal = getSeriesValue(personalSeries, day);
-                        writer.println(day + "," + offVal + "," + persVal);
-                    }
-                } else {
-                    writer.println("MONTHLY SUMMARY - YEAR TO DATE");
-                    writer.println(); // Empty line for spacing
-                    writer.println("Month,Total Slips"); // Headers
+                writer.println(headerTitle);
+                writer.println();
+                writer.println(categoryLabel + ",Official,Personal");
 
-                    // Loop through the chart categories
-                    for (String month : dayAxis.getCategories()) {
-                        Number totalVal = getSeriesValue(monthlyTotalSeries, month);
-                        writer.println(month + "," + totalVal);
-                    }
-                }
-
-                writer.println(); // Empty line for spacing
-                writer.println(); // Empty line for spacing
-
-                // --- 2. WRITE THE DEPARTMENT TABLE DATA ---
-                writer.println("DEPARTMENT SUMMARY");
-                writer.println("Department,Total Slips,Official,Personal,Avg Duration");
-
-                for (ReportDepartmentSummary row : reportsTable.getItems()) {
-                    writer.println(
-                            row.getDepartment() + "," +
-                                    row.getTotalSlips() + "," +
-                                    row.getOfficial() + "," +
-                                    row.getPersonal() + "," +
-                                    row.getAvgDuration()
-                    );
+                for (String category : dayAxis.getCategories()) {
+                    Number offVal = getSeriesValue(officialSeries, category);
+                    Number persVal = getSeriesValue(personalSeries, category);
+                    writer.println(category + "," + offVal + "," + persVal);
                 }
 
                 Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
@@ -401,50 +349,32 @@ public class ReportsController {
             }
         }
     }
-    // Builds a grid table containing the data from the current chart view
+
     private javafx.scene.Node createPrintableTable() {
         javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
         grid.setHgap(40);
         grid.setVgap(10);
         grid.setStyle("-fx-padding: 10; -fx-border-color: #cccccc; -fx-border-width: 1; -fx-background-color: white;");
 
-        if (isDailyView) {
-            // --- DAILY TABLE HEADERS ---
-            addTableCell(grid, "Day", 0, 0, true);
-            addTableCell(grid, "Official", 1, 0, true);
-            addTableCell(grid, "Personal", 2, 0, true);
+        String categoryHeader = isDailyView ? "Day" : "Month";
+        addTableCell(grid, categoryHeader, 0, 0, true);
+        addTableCell(grid, "Official", 1, 0, true);
+        addTableCell(grid, "Personal", 2, 0, true);
 
-            // --- DAILY TABLE DATA ---
-            int row = 1;
-            for (String day : dayAxis.getCategories()) {
-                Number offVal = getSeriesValue(officialSeries, day);
-                Number persVal = getSeriesValue(personalSeries, day);
+        int row = 1;
+        for (String category : dayAxis.getCategories()) {
+            Number offVal = getSeriesValue(officialSeries, category);
+            Number persVal = getSeriesValue(personalSeries, category);
 
-                addTableCell(grid, day, 0, row, false);
-                addTableCell(grid, offVal.toString(), 1, row, false);
-                addTableCell(grid, persVal.toString(), 2, row, false);
-                row++;
-            }
-        } else {
-            // --- MONTHLY TABLE HEADERS ---
-            addTableCell(grid, "Month", 0, 0, true);
-            addTableCell(grid, "Total Slips", 1, 0, true);
-
-            // --- MONTHLY TABLE DATA ---
-            int row = 1;
-            for (String month : dayAxis.getCategories()) {
-                Number totalVal = getSeriesValue(monthlyTotalSeries, month);
-
-                addTableCell(grid, month, 0, row, false);
-                addTableCell(grid, totalVal.toString(), 1, row, false);
-                row++;
-            }
+            addTableCell(grid, category, 0, row, false);
+            addTableCell(grid, offVal.toString(), 1, row, false);
+            addTableCell(grid, persVal.toString(), 2, row, false);
+            row++;
         }
 
         return grid;
     }
 
-    // Formats individual cells for the printable table
     private void addTableCell(javafx.scene.layout.GridPane grid, String text, int col, int row, boolean isHeader) {
         Label label = new Label(text);
         if (isHeader) {
@@ -455,13 +385,12 @@ public class ReportsController {
         grid.add(label, col, row);
     }
 
-    // Safely extracts a Y-value for a given X-category string
     private Number getSeriesValue(XYChart.Series<String, Number> series, String category) {
         for (XYChart.Data<String, Number> data : series.getData()) {
             if (data.getXValue().equals(category)) {
                 return data.getYValue();
             }
         }
-        return 0; // Return 0 if the category has no data
+        return 0;
     }
 }

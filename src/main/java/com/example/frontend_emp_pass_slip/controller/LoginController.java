@@ -95,7 +95,7 @@ public class LoginController {
     private void initialize() {
         // Run standard configurations to ensure text turns white immediately on setup
         handleRoleChange();
-        SessionManager.getInstance().stopTimer();
+        SessionManager.getInstance().setCurrentUser(usernameField.getText());
     }
 
     @FXML

@@ -41,9 +41,12 @@ public final class AuthenticationService {
         // This MUST match the signature in SessionManager
         sessions.createSession(onAutoLock, creds.role, creds.username);
 
+        // 👇 ADD THIS — syncs username into backend.app.SessionManager,
+        // which BaseSettingsController/AppSettingsManager rely on
+        backend.app.SessionManager.getInstance().setCurrentUser(creds.username);
+
         logger.log(ApplicationConstants.LOG_EVENT_LOGIN, "Successful login for: " + username);
     }
-
     public void seedAccounts() {
         String testHash = hasher.hash("12345".toCharArray());
 
