@@ -28,52 +28,6 @@
             <Label text="Pass slip statistics and summary data" styleClass="employee-page-subtitle" />
         </VBox>
 
-        <HBox spacing="14" alignment="CENTER_LEFT" maxWidth="Infinity">
-            <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
-                  style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
-                <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
-                    <Label fx:id="totalSlipsLabel" text="24" styleClass="dashboard-stat-number" />
-                    <Label text="Total Slips" styleClass="dashboard-stat-label" />
-                </VBox>
-                <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #2563eb; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
-                    <Label text="📋" styleClass="dashboard-card-icon-text" />
-                </StackPane>
-            </HBox>
-
-            <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
-                  style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
-                <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
-                    <Label fx:id="currentlyOutLabel" text="2" styleClass="dashboard-stat-number" />
-                    <Label text="Currently Out" styleClass="dashboard-stat-label" style="-fx-text-fill: #ef4444; -fx-font-weight: bold;" />
-                </VBox>
-                <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #ef4444; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
-                    <Label text="⌁" styleClass="dashboard-card-icon-text" />
-                </StackPane>
-            </HBox>
-
-            <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
-                  style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
-                <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
-                    <Label fx:id="officialLabel" text="16" styleClass="dashboard-stat-number" />
-                    <Label text="Official" styleClass="dashboard-stat-label" />
-                </VBox>
-                <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #f59e0b; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
-                    <Label text="💼" styleClass="dashboard-card-icon-text" />
-                </StackPane>
-            </HBox>
-
-            <HBox styleClass="dashboard-stat-card" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT" spacing="16" maxWidth="400"
-                  style="-fx-padding: 12 20; -fx-min-height: 65px; -fx-max-height: 65px;">
-                <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
-                    <Label fx:id="avgDurationLabel" text="1h 8m" styleClass="dashboard-stat-number" />
-                    <Label text="Avg Duration" styleClass="dashboard-stat-label" />
-                </VBox>
-                <StackPane styleClass="dashboard-card-icon" style="-fx-background-color: #10b981; -fx-min-width: 36px; -fx-min-height: 36px; -fx-max-width: 36px; -fx-max-height: 36px;">
-                    <Label text="⏱" styleClass="dashboard-card-icon-text" />
-                </StackPane>
-            </HBox>
-        </HBox>
-
         <VBox styleClass="table-panel" spacing="12" style="-fx-padding: 16 18 16 18;">
 
             <HBox alignment="CENTER_LEFT" spacing="10">
@@ -81,6 +35,7 @@
                 <Region HBox.hgrow="ALWAYS" />
                 <Button fx:id="dailyBtn" text="Daily" styleClass="btn-primary" />
                 <Button fx:id="monthlyBtn" text="Monthly" styleClass="btn-secondary" />
+                <Button fx:id="quarterlyBtn" text="Quarterly" styleClass="btn-secondary" />
                 <Button fx:id="printBtn" text="Print" styleClass="btn-secondary" />
             </HBox>
 

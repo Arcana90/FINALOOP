@@ -1,6 +1,8 @@
 package com.example.frontend_emp_pass_slip.controller;
 
+import backend.auth.AuthSessionManager;
 import backend.app.HeaderStatsRepository;
+import backend.app.AppSettingsManager;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -9,11 +11,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import javafx.scene.layout.BorderPane;
+
 
 public class MainLayoutController {
 
@@ -23,7 +24,6 @@ public class MainLayoutController {
     @FXML private Label currentDateLabel;
     @FXML private Label pageTitleLabel;
 
-    // 👇 1. ADD ALL SIDEBAR TOGGLE BUTTONS HERE 👇
     @FXML private ToggleButton dashboardButton;
     @FXML private ToggleButton employeeButton;
     @FXML private ToggleButton passSlipButton;
@@ -33,19 +33,24 @@ public class MainLayoutController {
 
     private final HeaderStatsRepository headerStatsRepository = new HeaderStatsRepository();
 
+    // Tracks the current FXML so we can reload it instantly
+    private String currentActiveFxml = "Dashboard.fxml";
+
     @FXML
     private void initialize() {
-        // Mark Dashboard active on initial startup
         updateActiveSidebarButton(dashboardButton);
         loadDashboard();
-
-        // 👈 Apply Role-Based Access Control
         applyRolePermissions();
+
+        // Register the global settings listener
+        AppSettingsManager.getInstance().addSettingsChangedListener(() -> {
+            updateHeaderStats();
+            loadView(currentActiveFxml);
+        });
     }
 
-    // 👇 Helper method to hide buttons based on role 👇
     private void applyRolePermissions() {
-        String role = backend.auth.SessionManager.getInstance().getCurrentUserRole();
+        String role = backend.auth.AuthSessionManager.getInstance().getCurrentUserRole();
 
         if (role == null) return;
 
@@ -73,11 +78,10 @@ public class MainLayoutController {
         }
     }
 
-    // 👇 Helper method to cleanly remove a button from the UI 👇
     private void hideButton(ToggleButton button) {
         if (button != null) {
             button.setVisible(false);
-            button.setManaged(false); // Removes the empty gap in the VBox
+            button.setManaged(false);
         }
     }
 
@@ -102,30 +106,27 @@ public class MainLayoutController {
         updateActiveSidebarButton(passSlipButton);
     }
 
-    // 👇 UPDATED: Role-Based Sub-Routing for Monitoring 👇
     public void loadMonitoring() {
         setPageTitle("Monitoring");
 
-        // Fetch the user's role
-        String role = backend.auth.SessionManager.getInstance().getCurrentUserRole();
+        String role = backend.auth.AuthSessionManager.getInstance().getCurrentUserRole();
         if (role == null) role = "Admin";
 
-        // Route to the specific layout for that persona
         switch (role) {
             case "Director":
             case "Directors":
-                loadView("MonitoringDirector.fxml"); // Split-tables for Approvals
+                loadView("MonitoringDirector.fxml");
                 break;
 
             case "Guard":
             case "Guards":
-                loadView("MonitoringGuard.fxml");    // Guard view with Time In/Out
+                loadView("MonitoringGuard.fxml");
                 break;
 
             case "Admin":
             case "Administrators":
             default:
-                loadView("Monitoring.fxml");         // Default master table
+                loadView("Monitoring.fxml");
                 break;
         }
 
@@ -143,7 +144,7 @@ public class MainLayoutController {
     private void loadSettings() {
         setPageTitle("Settings");
 
-        String role = backend.auth.SessionManager.getInstance().getCurrentUserRole();
+        String role = backend.auth.AuthSessionManager.getInstance().getCurrentUserRole();
         if (role == null) role = "Admin";
 
         switch (role) {
@@ -167,9 +168,7 @@ public class MainLayoutController {
         updateActiveSidebarButton(settingsButton);
     }
 
-    // 👇 2. HELPER METHOD TO TOGGLE VISUAL STATES 👇
     private void updateActiveSidebarButton(ToggleButton activeButton) {
-        // Deselect everything first to ensure UI consistency
         if (dashboardButton != null) dashboardButton.setSelected(false);
         if (employeeButton != null) employeeButton.setSelected(false);
         if (passSlipButton != null) passSlipButton.setSelected(false);
@@ -177,7 +176,6 @@ public class MainLayoutController {
         if (reportsButton != null) reportsButton.setSelected(false);
         if (settingsButton != null) settingsButton.setSelected(false);
 
-        // Select the active screen's button
         if (activeButton != null) {
             activeButton.setSelected(true);
         }
@@ -191,12 +189,13 @@ public class MainLayoutController {
         int employeesOut = headerStatsRepository.countEmployeesOut();
         employeesOutLabel.setText(employeesOut + " out");
 
-        currentDateLabel.setText(
-                LocalDate.now().format(DateTimeFormatter.ofPattern("M/d/yyyy"))
-        );
+        // Dynamically format the header date
+        String formattedDate = AppSettingsManager.getInstance().formatDate(LocalDate.now());
+        currentDateLabel.setText(formattedDate);
     }
 
     private void loadView(String fxmlFileName) {
+        this.currentActiveFxml = fxmlFileName; // Save current view state
         try {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/example/frontend_emp_pass_slip/view/" + fxmlFileName)
@@ -214,7 +213,6 @@ public class MainLayoutController {
     @FXML
     private void logout() throws IOException {
         backend.app.SessionManager.getInstance().stopTimer();
-
         FXMLLoader loader = new FXMLLoader(
                 getClass().getResource("/com/example/frontend_emp_pass_slip/view/Login.fxml")
         );

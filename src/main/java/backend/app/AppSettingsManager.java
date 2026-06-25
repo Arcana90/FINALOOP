@@ -2,14 +2,18 @@ package backend.app;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class AppSettingsManager {
@@ -23,6 +27,9 @@ public class AppSettingsManager {
     private Timeline inactivityTimeline;
     private Runnable logoutRoutine;
 
+    // A list to hold anyone listening for setting changes
+    private final List<Runnable> settingsListeners = new ArrayList<>();
+
     private AppSettingsManager() {
         refreshSettings();
     }
@@ -34,12 +41,21 @@ public class AppSettingsManager {
         return instance;
     }
 
+    // Method to register a listener
+    public void addSettingsChangedListener(Runnable listener) {
+        settingsListeners.add(listener);
+    }
+
     // Load or refresh data directly from DB cache
     public void refreshSettings() {
-        // 🌟 UPDATED: Get the current user from SessionManager
-        String currentUser = SessionManager.getInstance().getCurrentUser();
+        // 🌟 FIXED: Query the correct AuthSessionManager to get the active user
+        String currentUser = backend.auth.AuthSessionManager.getInstance().getCurrentUsername();
 
-        // 🌟 pass the currentUser to loadSettings
+        // Safety check: If no user is logged in yet, don't attempt to load DB settings
+        if (currentUser == null || currentUser.isEmpty()) {
+            return;
+        }
+
         Map<String, String> settings = repository.loadSettings(currentUser);
 
         this.timeFormat = settings.getOrDefault("time_format", "24h");
@@ -53,6 +69,11 @@ public class AppSettingsManager {
         // If a window is currently active, reset the timer to apply the new duration limit immediately
         if (inactivityTimeline != null) {
             resetTimer();
+        }
+
+        // Broadcast the update to all listeners on the UI thread
+        for (Runnable listener : settingsListeners) {
+            Platform.runLater(listener);
         }
     }
 

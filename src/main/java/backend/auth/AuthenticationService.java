@@ -1,12 +1,13 @@
 package backend.auth;
 
+import backend.auth.AuthSessionManager; // 🌟 CORRECT IMPORT
 import backend.db.ConnectionPoolManager;
 import backend.logging.ActivityLogger;
 import backend.shared.ApplicationConstants;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 public final class AuthenticationService {
@@ -14,10 +15,10 @@ public final class AuthenticationService {
     private static volatile AuthenticationService instance;
     private final AdminAuthValidator validator = AdminAuthValidator.getInstance();
     private final PasswordHasher hasher = PasswordHasher.getInstance();
-    private final SessionManager sessions = SessionManager.getInstance();
+    // 🌟 Use AuthSessionManager here
+    private final AuthSessionManager sessions = AuthSessionManager.getInstance();
     private final ActivityLogger logger = ActivityLogger.getInstance();
 
-    // Using record for cleaner data holding
     private record UserCredentials(String hash, String role, String username) {}
 
     private AuthenticationService() {}
@@ -38,79 +39,53 @@ public final class AuthenticationService {
             throw new AuthenticationException("Invalid username or password.");
         }
 
-        // This MUST match the signature in SessionManager
+        // 🌟 Use the session manager
         sessions.createSession(onAutoLock, creds.role, creds.username);
 
-        // 👇 ADD THIS — syncs username into backend.app.SessionManager,
-        // which BaseSettingsController/AppSettingsManager rely on
-        backend.app.SessionManager.getInstance().setCurrentUser(creds.username);
+        // ❌ REMOVED: .setCurrentUser(creds.username) -> Not needed, AuthSessionManager is the source of truth
 
         logger.log(ApplicationConstants.LOG_EVENT_LOGIN, "Successful login for: " + username);
     }
+
     public void seedAccounts() {
-        String testHash = hasher.hash("12345".toCharArray());
+        String checkSql = "SELECT count(*) FROM users";
+        String insertSql = "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)";
 
-        ConnectionPoolManager pool = ConnectionPoolManager.getInstance();
-        try (Connection c = pool.acquire()) {
+        try (Connection c = ConnectionPoolManager.getInstance().acquire();
+             PreparedStatement checkStmt = c.prepareStatement(checkSql);
+             ResultSet rs = checkStmt.executeQuery()) {
 
-            String sql = "INSERT INTO users (user_id, username, password_hash, first_name, last_name, role, is_active) " +
-                    "VALUES (?, ?, ?, ?, ?, ?::user_role, ?) " +
-                    "ON CONFLICT (user_id) DO NOTHING";
+            // If the users table is completely empty, create a default admin
+            if (rs.next() && rs.getInt(1) == 0) {
+                try (PreparedStatement insertStmt = c.prepareStatement(insertSql)) {
+                    insertStmt.setString(1, "admin");
 
-            // Seed Guard
-            try (PreparedStatement ps = c.prepareStatement(sql)) {
-                ps.setInt(1, 2);
-                ps.setString(2, "guard");
-                ps.setString(3, testHash);
-                ps.setString(4, "Security");
-                ps.setString(5, "Guard");
+                    char[] defaultPassword = "password123".toCharArray();
+                    insertStmt.setString(2, hasher.hash(defaultPassword));
+                    insertStmt.setString(3, "Admin");
 
-                // 👇 UPDATED TO PLURAL
-                ps.setString(6, "Guards");
-
-                ps.setBoolean(7, true);
-                ps.executeUpdate();
+                    insertStmt.executeUpdate();
+                    Arrays.fill(defaultPassword, '\0');
+                    LOG.info("Database was empty. Seeded default admin account (admin / password123).");
+                }
             }
-
-            // Seed Director
-            try (PreparedStatement ps = c.prepareStatement(sql)) {
-                ps.setInt(1, 3);
-                ps.setString(2, "director");
-                ps.setString(3, testHash);
-                ps.setString(4, "Managing");
-                ps.setString(5, "Director");
-
-                // 👇 UPDATED TO PLURAL
-                ps.setString(6, "Directors");
-
-                ps.setBoolean(7, true);
-                ps.executeUpdate();
-            }
-            System.out.println("=== Guard and Director accounts seeded successfully! ===");
         } catch (Exception e) {
-            System.err.println("Database seeding failed because: " + e.getMessage());
-            e.printStackTrace();
+            LOG.warning("Skipped account seeding (accounts may already exist): " + e.getMessage());
         }
     }
     public void unlock(char[] password) {
         validator.validateUnlockPayload(password);
-
-        // Retrieve the current user from the session
         String currentUsername = sessions.getCurrentUsername();
         if (currentUsername == null) {
             throw new AuthenticationException("Session expired. Please log in again.");
         }
 
-        // Fetch credentials for the user who was locked
         UserCredentials creds = loadCredentials(currentUsername);
-
-        // Verify their password against the stored hash
         if (creds == null || !hasher.verify(password, creds.hash)) {
             logger.log(ApplicationConstants.LOG_EVENT_SESSION_LOCK, "Failed unlock attempt.");
             throw new AuthenticationException("Incorrect password.");
         }
 
-        // Resume session
         sessions.unlockSession();
         logger.log(ApplicationConstants.LOG_EVENT_SESSION_LOCK, "Session unlocked successfully.");
     }

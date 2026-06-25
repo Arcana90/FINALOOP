@@ -4,10 +4,9 @@ import backend.app.SessionManager;
 
 public class DirectorSettingsController extends BaseSettingsController {
 
-    // Inside EACH of these three files, make sure this method looks exactly like this:
     @Override
     protected String getCurrentUsername() {
-        return backend.auth.SessionManager.getInstance().getCurrentUsername();
+        return backend.auth.AuthSessionManager.getInstance().getCurrentUsername();
     }
 
     @Override

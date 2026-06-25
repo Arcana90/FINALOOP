@@ -1,5 +1,6 @@
 package com.example.frontend_emp_pass_slip.controller;
 
+import backend.app.AppSettingsManager;
 import backend.passslip.MonitoringJdbcRepository;
 import backend.passslip.PassSlipMonitoringRecord;
 import javafx.collections.FXCollections;
@@ -47,9 +48,36 @@ public class MonitoringGuardController {
         slipNoColumn.setCellValueFactory(new PropertyValueFactory<>("slipNo"));
         employeeIdColumn.setCellValueFactory(new PropertyValueFactory<>("employeeId"));
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+
+        // Dynamic Date Formatter
         dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
+        dateColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : AppSettingsManager.getInstance().formatDateString(item));
+            }
+        });
+
+        // Dynamic Time Out Formatter
         timeOutColumn.setCellValueFactory(new PropertyValueFactory<>("timeOut"));
+        timeOutColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : AppSettingsManager.getInstance().formatTimeString(item));
+            }
+        });
+
+        // Dynamic Time In Formatter
         timeInColumn.setCellValueFactory(new PropertyValueFactory<>("timeIn"));
+        timeInColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : AppSettingsManager.getInstance().formatTimeString(item));
+            }
+        });
 
         actionColumn.setCellFactory(param -> new TableCell<>() {
             private final Button btnOut = new Button("Log Time Out");
@@ -117,11 +145,10 @@ public class MonitoringGuardController {
     private void loadData() {
         List<PassSlipMonitoringRecord> allRecords = repository.findAll();
 
-        // 🟢 DATE FILTER APPLIED HERE
         String todayString = java.time.LocalDate.now().toString();
 
         List<PassSlipMonitoringRecord> guardRecords = allRecords.stream()
-                .filter(r -> r.getDate() != null && r.getDate().toString().equals(todayString)) // Must be today's date
+                .filter(r -> r.getDate() != null && r.getDate().toString().equals(todayString))
                 .filter(r -> "Approved".equalsIgnoreCase(r.getStatus()) ||
                         "Out".equalsIgnoreCase(r.getStatus()) ||
                         "Returned".equalsIgnoreCase(r.getStatus()))

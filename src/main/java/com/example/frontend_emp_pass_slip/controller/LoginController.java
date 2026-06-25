@@ -1,6 +1,7 @@
 package com.example.frontend_emp_pass_slip.controller;
 
 import backend.app.AppSettingsManager;
+import backend.auth.AuthSessionManager; // 🌟 Updated Import!
 import backend.auth.PasswordHasher;
 import backend.db.ConnectionPoolManager;
 import javafx.fxml.FXML;
@@ -21,7 +22,6 @@ import java.util.Arrays;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Button;
-import backend.auth.SessionManager;
 
 public class LoginController {
     @FXML private TextField usernameField;
@@ -107,7 +107,7 @@ public class LoginController {
             return;
         }
 
-        // 👇 Pass username and password directly into the tracking validator
+        // Pass username and password directly into the tracking validator
         if (!validateAndEstablishSession(username, password)) {
             statusLabel.setText("Invalid username or password.");
             return;
@@ -120,12 +120,13 @@ public class LoginController {
         stage.centerOnScreen();
 
         int savedTimeout = AppSettingsManager.getInstance().getAutoLogoutTimer();
+
+        // Ensure the App UI timer knows the new timeout
         backend.app.SessionManager.getInstance().updateTimeout(savedTimeout);
     }
 
     private boolean validateAndEstablishSession(String username, String password) {
         Connection c = null;
-        // 👇 UPDATED: Select both password_hash AND role from the DB
         String sql = "SELECT password_hash, role FROM users WHERE username = ?";
 
         try {
@@ -136,60 +137,26 @@ public class LoginController {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         String storedHash = rs.getString("password_hash");
-                        String role = rs.getString("role"); // Fetch the user's role
+                        String role = rs.getString("role");
 
                         boolean isValid = false;
                         if (password.equals(storedHash)) {
                             isValid = true;
                         } else {
                             char[] passwordChars = password.toCharArray();
-                            isValid = backend.auth.PasswordHasher.getInstance().verify(passwordChars, storedHash);
+                            isValid = PasswordHasher.getInstance().verify(passwordChars, storedHash);
                             Arrays.fill(passwordChars, '\0');
                         }
 
-                        // 👇 If password is valid, initialize the active session context
                         if (isValid) {
-                            SessionManager.getInstance().createSession(null, role, username);
+                            // 🌟 1. Tell the renamed Auth Manager who logged in
+                            AuthSessionManager.getInstance().createSession(null, role, username);
+
+                            // 🌟 2. FORCE the Settings Manager to load THIS specific user's settings!
+                            AppSettingsManager.getInstance().refreshSettings();
+
+                            // (Notice we removed the old setCurrentUser line here!)
                             return true;
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Database error during login validation.");
-        } finally {
-            if (c != null) {
-                ConnectionPoolManager.getInstance().release(c);
-            }
-        }
-        return false;
-    }
-
-    private boolean validateLogin(String username, String password) {
-        Connection c = null;
-        String sql = "SELECT password_hash FROM users WHERE username = ?";
-
-        try {
-            c = ConnectionPoolManager.getInstance().acquire();
-            try (PreparedStatement ps = c.prepareStatement(sql)) {
-                ps.setString(1, username);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        String storedHash = rs.getString("password_hash");
-
-                        if (password.equals(storedHash)) {
-                            return true;
-                        }
-
-                        char[] passwordChars = password.toCharArray();
-                        try {
-                            boolean isMatch = PasswordHasher.getInstance().verify(passwordChars, storedHash);
-                            Arrays.fill(passwordChars, '\0');
-                            return isMatch;
-                        } catch (Exception e) {
-                            Arrays.fill(passwordChars, '\0');
                         }
                     }
                 }

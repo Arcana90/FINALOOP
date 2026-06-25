@@ -33,8 +33,7 @@ public final class SessionActiveGuard {
 
     private static volatile SessionActiveGuard instance;
 
-    private final SessionManager sessions = SessionManager.getInstance();
-
+    private final AuthSessionManager sessions = AuthSessionManager.getInstance();
     private SessionActiveGuard() {}
 
     public static SessionActiveGuard getInstance() {
