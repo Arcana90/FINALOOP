@@ -155,11 +155,26 @@ public class AppSettingsManager {
     }
 
     public String formatTimeString(String dbTime) {
-        if (dbTime == null || dbTime.isEmpty() || dbTime.equalsIgnoreCase("null")) return "";
+        if (dbTime == null || dbTime.isEmpty() || dbTime.equalsIgnoreCase("null") || dbTime.equals("-")) {
+            return "N/A";
+        }
         try {
+            // 1. If it's a full timestamp ("2026-06-12 11:36:52"), extract the time component
+            if (dbTime.contains(" ")) {
+                String[] parts = dbTime.split(" ");
+                dbTime = parts[parts.length - 1];
+            }
+
+            // 2. Truncate high-precision database sub-seconds/nanoseconds (".618933")
+            if (dbTime.contains(".")) {
+                dbTime = dbTime.split("\\.")[0];
+            }
+
+            // Now dbTime is a clean "HH:mm:ss" or "HH:mm" string
             return formatTime(LocalTime.parse(dbTime));
         } catch (Exception e) {
-            return dbTime; // Fallback to raw string if parsing fails
+            // Fallback to raw string gracefully if parsing fails
+            return dbTime;
         }
     }
 

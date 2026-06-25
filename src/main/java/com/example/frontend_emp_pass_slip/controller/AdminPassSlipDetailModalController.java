@@ -1,5 +1,6 @@
 package com.example.frontend_emp_pass_slip.controller;
 
+import backend.app.AppSettingsManager; // 🌟 Added import
 import backend.passslip.MonitoringJdbcRepository;
 import backend.passslip.PassSlipMonitoringRecord;
 import javafx.fxml.FXML;
@@ -29,16 +30,24 @@ public class AdminPassSlipDetailModalController {
     public void setRecord(PassSlipMonitoringRecord record) {
         this.record = record;
         modalSlipNoLabel.setText("Pass Slip No: " + record.getSlipNo());
-        modalTimeRequestedLabel.setText("Requested at: " + record.getTimeRequested());
+
+        // 🌟 FIXED: Route the requested timestamp through the AppSettingsManager
+        String formattedRequested = AppSettingsManager.getInstance().formatTimeString(record.getTimeRequested());
+        modalTimeRequestedLabel.setText("Requested at: " + formattedRequested);
+
         modalEmpIdLabel.setText("ID: " + record.getEmployeeId());
         modalNameLabel.setText(record.getName());
         modalDeptLabel.setText(record.getDepartment());
-        modalEstOutLabel.setText("Est. Out: " + record.getExpectedTimeOut());
-        modalEstInLabel.setText("Est. In: " + record.getExpectedTimeIn());
+
+        // 🌟 FIXED: Format the Estimated Out and In times dynamically
+        String formattedOut = AppSettingsManager.getInstance().formatTimeString(record.getExpectedTimeOut());
+        String formattedIn = AppSettingsManager.getInstance().formatTimeString(record.getExpectedTimeIn());
+
+        modalEstOutLabel.setText("Est. Out: " + formattedOut);
+        modalEstInLabel.setText("Est. In: " + formattedIn);
 
         // Parse Reason and Destination safely
         String rawReason = record.getReasonForLeaving();
-
         if (rawReason == null || rawReason.isBlank()) {
             rawReason = record.getReason();
         }
@@ -48,7 +57,6 @@ public class AdminPassSlipDetailModalController {
 
         if (rawReason != null && rawReason.contains("|")) {
             String[] parts = rawReason.split("\\|");
-
             for (String part : parts) {
                 part = part.trim();
                 if (part.startsWith("Destination:")) {
@@ -64,7 +72,6 @@ public class AdminPassSlipDetailModalController {
         modalDestinationLabel.setText(destination);
         modalReasonLabel.setText(nature);
 
-        // 🟢 CRITICAL FIX: You must call the badge setup here!
         setupStatusBadge(record.getStatus());
     }
 
@@ -73,43 +80,30 @@ public class AdminPassSlipDetailModalController {
 
         boolean isPending = status.equalsIgnoreCase("For Approval");
 
-        // Toggle button visibility
         actionButtonContainer.setVisible(isPending);
         actionButtonContainer.setManaged(isPending);
 
         String safeStatus = status.toUpperCase();
         modalBadgeLabel.setText(isPending ? "PENDING REVIEW" : safeStatus);
 
-        // Apply matching colors
         String baseStyle = "-fx-padding: 4 10; -fx-background-radius: 20; -fx-font-weight: bold; -fx-font-size: 11px; ";
 
         if (isPending) {
-            modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #fef3c7; -fx-text-fill: #d97706;"); // Yellow
+            modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #fef3c7; -fx-text-fill: #d97706;");
         } else if (safeStatus.equals("APPROVED") || safeStatus.equals("RETURNED")) {
-            modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #dcfce7; -fx-text-fill: #16a34a;"); // Green
+            modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #dcfce7; -fx-text-fill: #16a34a;");
         } else if (safeStatus.equals("REJECTED") || safeStatus.equals("CANCELLED") || safeStatus.equals("AWOL")) {
-            modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #fee2e2; -fx-text-fill: #dc2626;"); // Red
+            modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #fee2e2; -fx-text-fill: #dc2626;");
         } else if (safeStatus.equals("OUT")) {
-            modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #e0f2fe; -fx-text-fill: #0284c7;"); // Blue
+            modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #e0f2fe; -fx-text-fill: #0284c7;");
         } else {
-            modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #f3f4f6; -fx-text-fill: #4b5563;"); // Gray
+            modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #f3f4f6; -fx-text-fill: #4b5563;");
         }
     }
 
-    @FXML
-    private void handleApprove() {
-        processAction("Approved", "APPROVE");
-    }
-
-    @FXML
-    private void handleReject() {
-        processAction("Rejected", "REJECT");
-    }
-
-    @FXML
-    private void handleCancel() {
-        processAction("Cancelled", "CANCEL");
-    }
+    @FXML private void handleApprove() { processAction("Approved", "APPROVE"); }
+    @FXML private void handleReject() { processAction("Rejected", "REJECT"); }
+    @FXML private void handleCancel() { processAction("Cancelled", "CANCEL"); }
 
     private void processAction(String status, String actionLabel) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);

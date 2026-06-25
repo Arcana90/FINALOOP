@@ -6,18 +6,32 @@ public class ReportEmployeeSummary {
     private final int personalCount;
     private final int officialCount;
     private final int totalCount;
+    private final int approvedCount;
+    private final int canceledCount;
+    private final int rejectedCount;
+    private final int awolCount;
 
-    public ReportEmployeeSummary(String employeeId, String employeeName, int personalCount, int officialCount) {
+    public ReportEmployeeSummary(String employeeId, String employeeName, int personalCount, int officialCount,
+                                 int approvedCount, int canceledCount, int rejectedCount, int awolCount) {
         this.employeeId = employeeId;
         this.employeeName = employeeName;
         this.personalCount = personalCount;
         this.officialCount = officialCount;
         this.totalCount = personalCount + officialCount;
+        this.approvedCount = approvedCount;
+        this.canceledCount = canceledCount;
+        this.rejectedCount = rejectedCount;
+        this.awolCount = awolCount;
     }
 
+    // Getters
     public String getEmployeeId() { return employeeId; }
     public String getEmployeeName() { return employeeName; }
     public int getPersonalCount() { return personalCount; }
     public int getOfficialCount() { return officialCount; }
     public int getTotalCount() { return totalCount; }
+    public int getApprovedCount() { return approvedCount; }
+    public int getCanceledCount() { return canceledCount; }
+    public int getRejectedCount() { return rejectedCount; }
+    public int getAwolCount() { return awolCount; }
 }

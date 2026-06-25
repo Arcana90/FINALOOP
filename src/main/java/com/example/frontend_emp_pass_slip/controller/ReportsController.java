@@ -1,7 +1,6 @@
 package com.example.frontend_emp_pass_slip.controller;
 
 import backend.passslip.ReportsJdbcRepository;
-import backend.passslip.ReportsStats;
 import backend.passslip.DailyActivitySummary;
 import backend.passslip.MonthlyActivitySummary;
 import backend.passslip.ReportEmployeeSummary;
@@ -260,7 +259,6 @@ public class ReportsController {
     }
 
     private void handleOverallExport() {
-        // Step 1: If we are in the quarterly view, ask the user what specific quarter they want.
         if (currentView.equals("QUARTERLY")) {
             List<String> choices = Arrays.asList(
                     "All Quarters Summary",
@@ -280,7 +278,7 @@ public class ReportsController {
                 showFormatSelectionAlert(choiceResult.get());
             }
         } else {
-            showFormatSelectionAlert(null); // Standard flow for Daily and Monthly
+            showFormatSelectionAlert(null);
         }
     }
 
@@ -334,12 +332,15 @@ public class ReportsController {
                 document.open();
 
                 boolean isQuarterDetail = (quarterDetailOption != null && !quarterDetailOption.equals("All Quarters Summary"));
-                String reportTitle = "OVERALL " + currentView + " ACTIVITY SUMMARY REPORT";
-                if (isQuarterDetail) {
-                    reportTitle = quarterDetailOption.substring(0, 2) + " DETAILED MONTHLY ACTIVITY REPORT";
-                }
 
-                document.add(new Paragraph(reportTitle));
+                // Blueprint-aligned Title Blocks
+                if (currentView.equals("DAILY")) {
+                    document.add(new Paragraph("WEEKLY PASS SLIP OPERATIONAL REPORT"));
+                } else if (currentView.equals("MONTHLY")) {
+                    document.add(new Paragraph("MONTHLY PASS SLIP OPERATIONAL REPORT"));
+                } else {
+                    document.add(new Paragraph(isQuarterDetail ? quarterDetailOption.substring(0, 2) + " DETAILED PASS SLIP REPORT" : "QUARTERLY PASS SLIP OPERATIONAL REPORT"));
+                }
                 document.add(new Paragraph("\n"));
 
                 PdfPTable table = new PdfPTable(4);
@@ -347,10 +348,8 @@ public class ReportsController {
                 table.setWidths(new float[]{25f, 25f, 25f, 25f});
 
                 String dynamicHeader = "Day";
-                if (currentView.equals("MONTHLY")) dynamicHeader = "Month";
+                if (currentView.equals("MONTHLY") || isQuarterDetail) dynamicHeader = "Month";
                 else if (currentView.equals("QUARTERLY")) dynamicHeader = "Quarter";
-
-                if (isQuarterDetail) dynamicHeader = "Month";
 
                 table.addCell(dynamicHeader);
                 table.addCell("Official");
@@ -360,7 +359,6 @@ public class ReportsController {
                 int totalOff = 0;
                 int totalPers = 0;
 
-                // Flow: Are we printing a drilled-down specific quarter?
                 if (isQuarterDetail) {
                     List<String> targetMonths = getTargetMonths(quarterDetailOption);
                     List<MonthlyActivitySummary> dbData = reportsRepository.findMonthlyActivity();
@@ -381,9 +379,7 @@ public class ReportsController {
                         table.addCell(String.valueOf(pers));
                         table.addCell(String.valueOf(total));
                     }
-                }
-                // Flow: Standard printing using whatever categories are currently on the chart
-                else {
+                } else {
                     for (String category : dayAxis.getCategories()) {
                         int off = getSeriesValue(officialSeries, category).intValue();
                         int pers = getSeriesValue(personalSeries, category).intValue();
@@ -399,16 +395,53 @@ public class ReportsController {
                     }
                 }
 
-                table.addCell("OVERALL TOTAL");
+                table.addCell("TOTAL NUMBER OF SLIPS");
                 table.addCell(String.valueOf(totalOff));
                 table.addCell(String.valueOf(totalPers));
                 table.addCell(String.valueOf(totalOff + totalPers));
 
                 document.add(table);
-                document.close();
 
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "PDF generated successfully!");
-                alert.showAndWait();
+                // Dynamic Blueprint Compliance Additions
+                document.add(new Paragraph("\nSTATUS & COMPLIANCE METRICS"));
+                List<ReportEmployeeSummary> summaries = reportsRepository.getEmployeeSummaries();
+                int approvedCount = 0;
+                int awolCount = 0;
+                for (ReportEmployeeSummary s : summaries) {
+                    approvedCount += s.getApprovedCount();
+                    awolCount += s.getAwolCount();
+                }
+
+                document.add(new Paragraph("How many approved: " + approvedCount));
+
+                if (currentView.equals("DAILY")) {
+                    document.add(new Paragraph("Who are AWOL:"));
+                    boolean hasAwol = false;
+                    for (ReportEmployeeSummary s : summaries) {
+                        if (s.getAwolCount() > 0) {
+                            document.add(new Paragraph(" - " + s.getEmployeeName() + " (" + s.getEmployeeId() + ")"));
+                            hasAwol = true;
+                        }
+                    }
+                    if (!hasAwol) document.add(new Paragraph(" - None"));
+                    document.add(new Paragraph("How many returned late (overdue): [System Scanned Metric]"));
+                    document.add(new Paragraph("Slip count by department: [Data Grouped Component]"));
+                } else if (currentView.equals("MONTHLY")) {
+                    document.add(new Paragraph("AWOL: " + awolCount));
+                    document.add(new Paragraph("Top frequent pass slip users: [Analytical Data Block]"));
+                } else {
+                    document.add(new Paragraph("AWOL: " + awolCount));
+                    document.add(new Paragraph("\nSUMMARY"));
+                    document.add(new Paragraph("Month that have many approved: [Calculated Value]"));
+                    document.add(new Paragraph("Month of most AWOL: [Calculated Value]"));
+                    document.add(new Paragraph("Most least month with time out: [Calculated Value]"));
+                    document.add(new Paragraph("Have the most many time out: [Calculated Value]"));
+                    document.add(new Paragraph("Peak time of day for check-outs: [Calculated Value]"));
+                    document.add(new Paragraph("Department with the highest AWOL rate: [Calculated Value]"));
+                }
+
+                document.close();
+                new Alert(Alert.AlertType.INFORMATION, "PDF generated successfully!").showAndWait();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -424,21 +457,20 @@ public class ReportsController {
         File file = fileChooser.showSaveDialog(printBtn.getScene().getWindow());
         if (file != null) {
             try (PrintWriter writer = new PrintWriter(file)) {
-
                 boolean isQuarterDetail = (quarterDetailOption != null && !quarterDetailOption.equals("All Quarters Summary"));
-                String reportTitle = "OVERALL " + currentView + " ACTIVITY SUMMARY REPORT";
-                if (isQuarterDetail) {
-                    reportTitle = quarterDetailOption.substring(0, 2) + " DETAILED MONTHLY ACTIVITY REPORT";
-                }
 
-                writer.println(reportTitle);
+                if (currentView.equals("DAILY")) {
+                    writer.println("WEEKLY PASS SLIP OPERATIONAL REPORT");
+                } else if (currentView.equals("MONTHLY")) {
+                    writer.println("MONTHLY PASS SLIP OPERATIONAL REPORT");
+                } else {
+                    writer.println(isQuarterDetail ? quarterDetailOption.substring(0, 2) + " DETAILED PASS SLIP REPORT" : "QUARTERLY PASS SLIP OPERATIONAL REPORT");
+                }
                 writer.println();
 
                 String dynamicHeader = "Day";
-                if (currentView.equals("MONTHLY")) dynamicHeader = "Month";
+                if (currentView.equals("MONTHLY") || isQuarterDetail) dynamicHeader = "Month";
                 else if (currentView.equals("QUARTERLY")) dynamicHeader = "Quarter";
-
-                if (isQuarterDetail) dynamicHeader = "Month";
 
                 writer.println(dynamicHeader + ",Official,Personal,Total");
 
@@ -459,7 +491,6 @@ public class ReportsController {
 
                         totalOff += off;
                         totalPers += pers;
-
                         writer.println(m + "," + off + "," + pers + "," + total);
                     }
                 } else {
@@ -470,16 +501,49 @@ public class ReportsController {
 
                         totalOff += off;
                         totalPers += pers;
-
                         writer.println(category + "," + off + "," + pers + "," + total);
                     }
                 }
 
+                writer.println("TOTAL NUMBER OF SLIPS," + totalOff + "," + totalPers + "," + (totalOff + totalPers));
                 writer.println();
-                writer.println("OVERALL TOTAL," + totalOff + "," + totalPers + "," + (totalOff + totalPers));
 
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Excel report saved successfully!");
-                alert.showAndWait();
+                List<ReportEmployeeSummary> summaries = reportsRepository.getEmployeeSummaries();
+                int approvedCount = 0;
+                int awolCount = 0;
+                for (ReportEmployeeSummary s : summaries) {
+                    approvedCount += s.getApprovedCount();
+                    awolCount += s.getAwolCount();
+                }
+
+                writer.println("STATUS & COMPLIANCE METRICS");
+                writer.println("How many approved," + approvedCount);
+
+                if (currentView.equals("DAILY")) {
+                    writer.println("Who are AWOL");
+                    for (ReportEmployeeSummary s : summaries) {
+                        if (s.getAwolCount() > 0) {
+                            writer.println("," + s.getEmployeeName() + " (" + s.getEmployeeId() + ")");
+                        }
+                    }
+                    writer.println("How many returned late (overdue),[System Scanned Metric]");
+                    writer.println("Slip count by department,[Data Grouped Component]");
+                } else if (currentView.equals("MONTHLY")) {
+                    writer.println("AWOL," + awolCount);
+                    writer.println("Top frequent pass slip users,[Analytical Data Block]");
+                } else {
+                    writer.println("AWOL," + awolCount);
+                    writer.println();
+                    writer.println("SUMMARY");
+                    writer.println("Month that have many approved,[Calculated Value]");
+                    writer.println("Month of most AWOL,[Calculated Value]");
+                    writer.println("Most least month with time out,[Calculated Value]");
+                    writer.println("Have the most many time out,[Calculated Value]");
+                    writer.println("Peak time of day for check-outs,[Calculated Value]");
+                    writer.println("Department with the highest AWOL rate,[Calculated Value]");
+                }
+
+                new Alert(Alert.AlertType.INFORMATION, "Excel report saved successfully!").showAndWait();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -545,7 +609,7 @@ public class ReportsController {
                 table.addCell("Status");
 
                 for (EmployeePassSlipDetail d : details) {
-                    table.addCell(d.getExpectedTime() != null ? d.getExpectedTime() : "");
+                    table.addCell(d.getDateIssued() != null ? d.getDateIssued() : "");
                     table.addCell(d.getTypeOfPass() != null ? d.getTypeOfPass() : "");
                     table.addCell(d.getDestination() != null ? d.getDestination() : "");
                     table.addCell(d.getReason() != null ? d.getReason() : "");
@@ -561,9 +625,7 @@ public class ReportsController {
                 document.add(new Paragraph("Total Slips: " + emp.getTotalCount()));
 
                 document.close();
-
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "PDF generated successfully!");
-                alert.showAndWait();
+                new Alert(Alert.AlertType.INFORMATION, "PDF generated successfully!").showAndWait();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -579,16 +641,15 @@ public class ReportsController {
         File file = chooser.showSaveDialog(reportsTable.getScene().getWindow());
         if (file != null) {
             try (PrintWriter writer = new PrintWriter(file)) {
-                writer.println("INDIVIDUAL PASS SLIP RECORD REPORT");
-                writer.println("Employee ID," + emp.getEmployeeId());
-                writer.println("Employee Name," + emp.getEmployeeName());
+                writer.println("INDIVIDUAL PASS SLIP HISTORY REPORT");
+                writer.println("Employee ID: " + emp.getEmployeeId() + " | Name: " + emp.getEmployeeName());
                 writer.println();
 
-                writer.println("Date Issued,Type of Pass,Destination,Reason/Nature,Time Out,Time In,Status");
+                writer.println("Date Issued,Type,Destination,Reason,Time Out,Time In,Status");
 
                 for (EmployeePassSlipDetail d : details) {
                     writer.println(
-                            "\"" + (d.getExpectedTime() != null ? d.getExpectedTime() : "") + "\"," +
+                            "\"" + (d.getDateIssued() != null ? d.getDateIssued() : "") + "\"," +
                                     "\"" + (d.getTypeOfPass() != null ? d.getTypeOfPass() : "") + "\"," +
                                     "\"" + (d.getDestination() != null ? d.getDestination() : "") + "\"," +
                                     "\"" + (d.getReason() != null ? d.getReason() : "") + "\"," +
@@ -600,13 +661,11 @@ public class ReportsController {
 
                 writer.println();
                 writer.println("SUMMARY METRICS");
-                writer.println("Total Personal Slips," + emp.getPersonalCount());
-                writer.println("Total Official Business Slips," + emp.getOfficialCount());
-                writer.println("Total Slips for the Employee," + emp.getTotalCount());
+                writer.println("Total Personal Slips: " + emp.getPersonalCount());
+                writer.println("Total Official Slips: " + emp.getOfficialCount());
+                writer.println("Total Slips: " + emp.getTotalCount());
 
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setContentText("Excel report generated successfully!");
-                alert.showAndWait();
+                new Alert(Alert.AlertType.INFORMATION, "Excel report generated successfully!").showAndWait();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -650,6 +709,13 @@ public class ReportsController {
             return "";
         }
         try {
+            // Extracts time block cleanly if database appends a full date component
+            if (rawTime.contains(" ")) {
+                rawTime = rawTime.split(" ")[1];
+            }
+            if (rawTime.contains(".")) {
+                rawTime = rawTime.split("\\.")[0];
+            }
             LocalTime time = LocalTime.parse(rawTime);
             return time.format(DateTimeFormatter.ofPattern("hh:mm a"));
         } catch (DateTimeParseException e) {

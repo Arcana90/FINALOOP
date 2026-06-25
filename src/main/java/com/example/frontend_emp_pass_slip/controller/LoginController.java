@@ -1,5 +1,6 @@
 package com.example.frontend_emp_pass_slip.controller;
-
+import javafx.application.Platform;
+import java.util.concurrent.CompletableFuture;
 import backend.app.AppSettingsManager;
 import backend.auth.AuthSessionManager; // 🌟 Updated Import!
 import backend.auth.PasswordHasher;
@@ -98,7 +99,7 @@ public class LoginController {
     }
 
     @FXML
-    private void login() throws IOException {
+    private void login() {
         String username = usernameField.getText() == null ? "" : usernameField.getText().trim();
         String password = passwordField.getText() == null ? "" : passwordField.getText();
 
@@ -107,12 +108,43 @@ public class LoginController {
             return;
         }
 
-        // Pass username and password directly into the tracking validator
-        if (!validateAndEstablishSession(username, password)) {
-            statusLabel.setText("Invalid username or password.");
-            return;
-        }
+        // 🌟 1. UI UX: Disable button and show loading text so the user knows it's working
+        loginButton.setDisable(true);
+        String originalButtonText = loginButton.getText();
+        loginButton.setText("Authenticating...");
+        statusLabel.setText("");
 
+        // 🌟 2. BACKGROUND THREAD: Do the heavy database and password hashing here!
+        CompletableFuture.supplyAsync(() -> {
+            // This runs in the background and will not freeze the UI
+            return validateAndEstablishSession(username, password);
+        }).thenAccept(isValid -> {
+            // 🌟 3. BACK TO UI THREAD: Once the background task finishes, update the screen
+            Platform.runLater(() -> {
+                if (isValid) {
+                    try {
+                        loadMainDashboard();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        statusLabel.setText("System error: Could not load dashboard.");
+                        resetLoginButton(originalButtonText);
+                    }
+                } else {
+                    statusLabel.setText("Invalid username or password.");
+                    resetLoginButton(originalButtonText);
+                }
+            });
+        });
+    }
+
+    // --- Helper Methods to keep your code clean ---
+
+    private void resetLoginButton(String originalText) {
+        loginButton.setDisable(false);
+        loginButton.setText(originalText);
+    }
+
+    private void loadMainDashboard() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/frontend_emp_pass_slip/view/MainLayout.fxml"));
         Scene scene = new Scene(loader.load(), 1280, 768);
         Stage stage = (Stage) usernameField.getScene().getWindow();
@@ -120,8 +152,6 @@ public class LoginController {
         stage.centerOnScreen();
 
         int savedTimeout = AppSettingsManager.getInstance().getAutoLogoutTimer();
-
-        // Ensure the App UI timer knows the new timeout
         backend.app.SessionManager.getInstance().updateTimeout(savedTimeout);
     }
 
