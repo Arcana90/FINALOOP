@@ -47,6 +47,9 @@ public class LoginController {
             String role = selectedRole.getText();
 
             // Unified clean base label style rule for maximum contrast
+            usernameField.clear();
+            passwordField.clear();
+            statusLabel.setText("");
             String baseLabelStyle = "-fx-text-fill: #ffffff;";
             welcomePortalLabel.setStyle("-fx-text-fill: #ffffff; -fx-font-weight: bold;");
             selectPortalLabel.setStyle(baseLabelStyle);

@@ -57,12 +57,14 @@ public class MainLayoutController {
         switch (role) {
             case "Director":
             case "Directors":
+                hideButton(dashboardButton);
                 hideButton(employeeButton);
                 hideButton(passSlipButton);
                 break;
 
             case "Guard":
             case "Guards":
+                hideButton(dashboardButton);
                 hideButton(employeeButton);
                 hideButton(passSlipButton);
                 hideButton(reportsButton);
