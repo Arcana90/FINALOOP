@@ -5,15 +5,13 @@ import backend.db.ConnectionPoolManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException; // 1. ADDED THIS IMPORT
+import java.sql.SQLException;
 
 public class PassSlipJdbcRepository {
 
-    // Method accepts the expected time parameters from your Controller
     public IssuePassSlipResult issuePassSlip(String employeeId, String reason, int issuedByUserId, String expectedTimeOut, String expectedTimeIn) {
         Connection connection = null;
 
-        // STEP 1: SQL to automatically cancel any active 'For Approval' slips for this employee today
         String cancelOldSlipSql = """
         UPDATE pass_slips 
         SET status = 'Cancelled'::slip_status 
@@ -22,7 +20,6 @@ public class PassSlipJdbcRepository {
           AND status = 'For Approval'::slip_status
         """;
 
-        // STEP 2: SQL to insert the fresh pass slip
         String insertNewSlipSql = """
         INSERT INTO pass_slips (
             employee_id,
@@ -42,25 +39,35 @@ public class PassSlipJdbcRepository {
 
         try {
             connection = ConnectionPoolManager.getInstance().acquire();
-            connection.setAutoCommit(false); // Start transaction to ensure both operations succeed together
+            connection.setAutoCommit(false);
 
-            // Execute Auto-Cancel
             try (PreparedStatement cancelStmt = connection.prepareStatement(cancelOldSlipSql)) {
                 cancelStmt.setString(1, employeeId);
                 cancelStmt.executeUpdate();
             }
 
-            // Execute New Issuance
             try (PreparedStatement insertStmt = connection.prepareStatement(insertNewSlipSql)) {
                 insertStmt.setString(1, employeeId);
                 insertStmt.setString(2, reason);
-                insertStmt.setString(3, expectedTimeOut);
-                insertStmt.setString(4, expectedTimeIn);
+
+                // SAFEGUARD: Prevent PSQLException when expected time is null (Emergency Passes)
+                if (expectedTimeOut == null || expectedTimeOut.isBlank()) {
+                    insertStmt.setNull(3, java.sql.Types.VARCHAR);
+                } else {
+                    insertStmt.setString(3, expectedTimeOut);
+                }
+
+                if (expectedTimeIn == null || expectedTimeIn.isBlank()) {
+                    insertStmt.setNull(4, java.sql.Types.VARCHAR);
+                } else {
+                    insertStmt.setString(4, expectedTimeIn);
+                }
+
                 insertStmt.setInt(5, issuedByUserId);
 
                 try (ResultSet resultSet = insertStmt.executeQuery()) {
                     if (resultSet.next()) {
-                        connection.commit(); // Commit transaction safely
+                        connection.commit();
                         return IssuePassSlipResult.success(resultSet.getInt("pass_slip_id"));
                     }
                 }
@@ -73,7 +80,7 @@ public class PassSlipJdbcRepository {
             if (connection != null) {
                 try {
                     connection.rollback();
-                } catch (SQLException ex) { // 2. FIXED TYPO HERE (Changed longSQLException to SQLException)
+                } catch (SQLException ex) {
                     ex.printStackTrace();
                 }
             }
@@ -81,6 +88,44 @@ public class PassSlipJdbcRepository {
             return IssuePassSlipResult.failed("Database error: " + e.getMessage());
         } finally {
             ConnectionPoolManager.getInstance().release(connection);
+        }
+    }
+
+    /**
+     * PROCESSES SLIP APPROVAL:
+     * - Emergency: Automatically stamps the `time_out` and sets status to 'Out'.
+     * - Normal: ONLY sets status to 'Approved' (Guard handles the time out).
+     */
+    /**
+     * PROCESSES SLIP APPROVAL:
+     * - Emergency: Automatically stamps the `time_out` and sets status to 'Excused'.
+     * - Normal: ONLY sets status to 'Approved' (Guard handles the time out).
+     */
+    public boolean approvePassSlip(int passSlipId, boolean isEmergency) {
+        Connection connection = null;
+        String sql;
+
+        if (isEmergency) {
+            // 🚨 UPDATED: Automatically log the actual time out and jump straight to 'Excused' status
+            sql = "UPDATE pass_slips SET status = 'Excused'::slip_status, time_out = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time WHERE pass_slip_id = ?";
+        } else {
+            // 🛂 NORMAL APPROVAL: Only approve it. Wait for the guard to click "Log Time Out".
+            sql = "UPDATE pass_slips SET status = 'Approved'::slip_status WHERE pass_slip_id = ?";
+        }
+
+        try {
+            connection = ConnectionPoolManager.getInstance().acquire();
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setInt(1, passSlipId);
+                return stmt.executeUpdate() > 0;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (connection != null) {
+                ConnectionPoolManager.getInstance().release(connection);
+            }
         }
     }
 
@@ -103,16 +148,8 @@ public class PassSlipJdbcRepository {
             return new IssuePassSlipResult(false, -1, errorMessage);
         }
 
-        public boolean isSuccess() {
-            return success;
-        }
-
-        public int getPassSlipId() {
-            return passSlipId;
-        }
-
-        public String getErrorMessage() {
-            return errorMessage;
-        }
+        public boolean isSuccess() { return success; }
+        public int getPassSlipId() { return passSlipId; }
+        public String getErrorMessage() { return errorMessage; }
     }
 }

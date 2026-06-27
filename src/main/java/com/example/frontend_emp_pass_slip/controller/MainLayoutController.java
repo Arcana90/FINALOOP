@@ -60,6 +60,9 @@ public class MainLayoutController {
                 hideButton(dashboardButton);
                 hideButton(employeeButton);
                 hideButton(passSlipButton);
+
+                updateActiveSidebarButton(monitoringButton);
+                loadMonitoring();
                 break;
 
             case "Guard":

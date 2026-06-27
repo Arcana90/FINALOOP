@@ -1,8 +1,9 @@
 package com.example.frontend_emp_pass_slip.controller;
 
-import backend.app.AppSettingsManager; // 🌟 Added import
+import backend.app.AppSettingsManager;
 import backend.passslip.MonitoringJdbcRepository;
 import backend.passslip.PassSlipMonitoringRecord;
+import backend.passslip.PassSlipJdbcRepository; // 🟢 ADDED
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -26,12 +27,13 @@ public class AdminPassSlipDetailModalController {
 
     private PassSlipMonitoringRecord record;
     private final MonitoringJdbcRepository repository = new MonitoringJdbcRepository();
+    private final PassSlipJdbcRepository passSlipRepository = new PassSlipJdbcRepository(); // 🟢 ADDED
+    private boolean isEmergencyPass = false; // 🟢 ADDED
 
     public void setRecord(PassSlipMonitoringRecord record) {
         this.record = record;
         modalSlipNoLabel.setText("Pass Slip No: " + record.getSlipNo());
 
-        // 🌟 FIXED: Route the requested timestamp through the AppSettingsManager
         String formattedRequested = AppSettingsManager.getInstance().formatTimeString(record.getTimeRequested());
         modalTimeRequestedLabel.setText("Requested at: " + formattedRequested);
 
@@ -39,14 +41,12 @@ public class AdminPassSlipDetailModalController {
         modalNameLabel.setText(record.getName());
         modalDeptLabel.setText(record.getDepartment());
 
-        // 🌟 FIXED: Format the Estimated Out and In times dynamically
         String formattedOut = AppSettingsManager.getInstance().formatTimeString(record.getExpectedTimeOut());
         String formattedIn = AppSettingsManager.getInstance().formatTimeString(record.getExpectedTimeIn());
 
         modalEstOutLabel.setText("Est. Out: " + formattedOut);
         modalEstInLabel.setText("Est. In: " + formattedIn);
 
-        // Parse Reason and Destination safely
         String rawReason = record.getReasonForLeaving();
         if (rawReason == null || rawReason.isBlank()) {
             rawReason = record.getReason();
@@ -54,6 +54,7 @@ public class AdminPassSlipDetailModalController {
 
         String destination = "N/A";
         String nature = "N/A";
+        isEmergencyPass = false; // Reset state
 
         if (rawReason != null && rawReason.contains("|")) {
             String[] parts = rawReason.split("\\|");
@@ -63,6 +64,10 @@ public class AdminPassSlipDetailModalController {
                     destination = part.replace("Destination:", "").trim();
                 } else if (part.startsWith("Reason:")) {
                     nature = part.replace("Reason:", "").trim();
+                } else if (part.startsWith("Type:")) {
+                    // 🟢 Extract the pass type to check for emergency
+                    String type = part.replace("Type:", "").trim();
+                    isEmergencyPass = type.equalsIgnoreCase("Emergency");
                 }
             }
         } else {
@@ -90,7 +95,7 @@ public class AdminPassSlipDetailModalController {
 
         if (isPending) {
             modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #fef3c7; -fx-text-fill: #d97706;");
-        } else if (safeStatus.equals("APPROVED") || safeStatus.equals("RETURNED")) {
+        } else if (safeStatus.equals("APPROVED") || safeStatus.equals("RETURNED") || safeStatus.equals("EXCUSED")) {
             modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #dcfce7; -fx-text-fill: #16a34a;");
         } else if (safeStatus.equals("REJECTED") || safeStatus.equals("CANCELLED") || safeStatus.equals("AWOL")) {
             modalBadgeLabel.setStyle(baseStyle + "-fx-background-color: #fee2e2; -fx-text-fill: #dc2626;");
@@ -101,7 +106,24 @@ public class AdminPassSlipDetailModalController {
         }
     }
 
-    @FXML private void handleApprove() { processAction("Approved", "APPROVE"); }
+    @FXML
+    private void handleApprove() {
+        // 🟢 MODIFIED: Calls your new repository method allowing emergency pass auto-time-out
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirm APPROVE");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Are you sure you want to APPROVE this pass slip?");
+
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            boolean success = passSlipRepository.approvePassSlip(record.getPassSlipId(), isEmergencyPass);
+            if (success) {
+                ((Stage) modalBadgeLabel.getScene().getWindow()).close();
+            } else {
+                new Alert(Alert.AlertType.ERROR, "Failed to approve pass slip.").show();
+            }
+        }
+    }
+
     @FXML private void handleReject() { processAction("Rejected", "REJECT"); }
     @FXML private void handleCancel() { processAction("Cancelled", "CANCEL"); }
 

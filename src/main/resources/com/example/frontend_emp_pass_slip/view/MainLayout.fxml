@@ -32,7 +32,7 @@
 
                 <VBox spacing="1">
                     <Label text="PassSlip" styleClass="sidebar-brand-title" />
-                    <Label text="University Admin" styleClass="sidebar-brand-subtitle" />
+                    <Label text="University System" styleClass="sidebar-brand-subtitle" />
                 </VBox>
             </HBox>
 

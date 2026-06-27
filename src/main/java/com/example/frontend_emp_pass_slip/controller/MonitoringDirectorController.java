@@ -68,7 +68,8 @@ public class MonitoringDirectorController {
                     badge.setPrefWidth(100);
                     badge.setStyle("-fx-alignment: center; -fx-padding: 3 8; -fx-font-size: 11px; -fx-font-weight: bold; -fx-background-radius: 12;");
 
-                    if ("APPROVED".equalsIgnoreCase(item)) {
+                    // Added EXCUSED to render identically to APPROVED
+                    if ("APPROVED".equalsIgnoreCase(item) || "EXCUSED".equalsIgnoreCase(item)) {
                         badge.setStyle(badge.getStyle() + "-fx-background-color: #e6f4ea; -fx-text-fill: #137333;");
                     } else {
                         badge.setStyle(badge.getStyle() + "-fx-background-color: #fce8e6; -fx-text-fill: #c5221f;");
@@ -137,6 +138,7 @@ public class MonitoringDirectorController {
 
             dialogStage.setScene(new Scene(loader.load()));
 
+            // Update your PassSlipDetailModalController to call the new passSlipRepository.approvePassSlip() method!
             PassSlipDetailModalController structuralController = loader.getController();
             structuralController.setPassSlipData(record, this, dialogStage);
 

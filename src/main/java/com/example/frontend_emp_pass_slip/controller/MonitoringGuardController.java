@@ -114,18 +114,29 @@ public class MonitoringGuardController {
                     PassSlipMonitoringRecord record = getTableView().getItems().get(getIndex());
                     String status = record.getStatus();
 
+                    // 🟢 FIXED: Check if the automatic 9 PM time-in (or a manual one) already exists
+                    boolean hasTimeIn = record.getTimeIn() != null && !record.getTimeIn().trim().isEmpty() && !record.getTimeIn().equalsIgnoreCase("null");
+
                     if ("Approved".equalsIgnoreCase(status)) {
                         btnOut.setVisible(true);
                         btnOut.setManaged(true);
                         btnIn.setVisible(false);
                         btnIn.setManaged(false);
                         setGraphic(pane);
-                    } else if ("Out".equalsIgnoreCase(status)) {
+                    } else if ("Out".equalsIgnoreCase(status) || "Excused".equalsIgnoreCase(status)) {
                         btnOut.setVisible(false);
                         btnOut.setManaged(false);
-                        btnIn.setVisible(true);
-                        btnIn.setManaged(true);
-                        setGraphic(pane);
+
+                        // 🟢 FIXED: Only show the "Log Time In" button if the time_in column is still empty
+                        if (!hasTimeIn) {
+                            btnIn.setVisible(true);
+                            btnIn.setManaged(true);
+                            setGraphic(pane);
+                        } else {
+                            btnIn.setVisible(false);
+                            btnIn.setManaged(false);
+                            setGraphic(null);
+                        }
                     } else {
                         setGraphic(null);
                     }
@@ -135,7 +146,8 @@ public class MonitoringGuardController {
     }
 
     private void setupFilters() {
-        statusFilter.setItems(FXCollections.observableArrayList("All", "Approved", "Out", "Returned"));
+        // Added Excused to the combobox filters
+        statusFilter.setItems(FXCollections.observableArrayList("All", "Approved", "Out", "Excused", "Returned"));
         statusFilter.setValue("All");
 
         statusFilter.valueProperty().addListener((obs, oldVal, newVal) -> applyFilters());
@@ -151,6 +163,7 @@ public class MonitoringGuardController {
                 .filter(r -> r.getDate() != null && r.getDate().toString().equals(todayString))
                 .filter(r -> "Approved".equalsIgnoreCase(r.getStatus()) ||
                         "Out".equalsIgnoreCase(r.getStatus()) ||
+                        "Excused".equalsIgnoreCase(r.getStatus()) ||
                         "Returned".equalsIgnoreCase(r.getStatus()))
                 .collect(Collectors.toList());
 
@@ -184,7 +197,8 @@ public class MonitoringGuardController {
 
     private void updateDashboardKPIs(List<PassSlipMonitoringRecord> records) {
         long approvedCount = records.stream().filter(r -> "Approved".equalsIgnoreCase(r.getStatus())).count();
-        long outCount = records.stream().filter(r -> "Out".equalsIgnoreCase(r.getStatus())).count();
+        // Excused passes are treated as Currently Out for KPI counts
+        long outCount = records.stream().filter(r -> "Out".equalsIgnoreCase(r.getStatus()) || "Excused".equalsIgnoreCase(r.getStatus())).count();
         long returnedCount = records.stream().filter(r -> "Returned".equalsIgnoreCase(r.getStatus())).count();
 
         approvedSlipsLabel.setText(String.valueOf(approvedCount));

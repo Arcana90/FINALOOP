@@ -15,38 +15,24 @@ import java.util.function.UnaryOperator;
 
 public class PassSlipIssuanceController {
 
-    @FXML
-    private ComboBox<Employee> employeeComboBox;
-    @FXML
-    private ComboBox<String> passTypeComboBox;
-    @FXML
-    private TextField departmentField;
-    @FXML
-    private TextField positionField;
-    @FXML
-    private TextField supervisorField;
-    @FXML
-    private TextField destinationField;
-    @FXML
-    private TextArea reasonTextArea;
+    @FXML private ComboBox<Employee> employeeComboBox;
+    @FXML private ComboBox<String> passTypeComboBox;
+    @FXML private TextField departmentField;
+    @FXML private TextField positionField;
+    @FXML private TextField supervisorField;
+    @FXML private TextField destinationField;
+    @FXML private TextArea reasonTextArea;
 
     // Split Time Fields
-    @FXML
-    private TextField outHourField;
-    @FXML
-    private TextField outMinuteField;
-    @FXML
-    private ComboBox<String> timeOutAmPmComboBox;
+    @FXML private TextField outHourField;
+    @FXML private TextField outMinuteField;
+    @FXML private ComboBox<String> timeOutAmPmComboBox;
 
-    @FXML
-    private TextField inHourField;
-    @FXML
-    private TextField inMinuteField;
-    @FXML
-    private ComboBox<String> timeInAmPmComboBox;
+    @FXML private TextField inHourField;
+    @FXML private TextField inMinuteField;
+    @FXML private ComboBox<String> timeInAmPmComboBox;
 
-    @FXML
-    private Label statusLabel;
+    @FXML private Label statusLabel;
 
     private final EmployeeRepository employeeRepository = new EmployeeRepository();
     private final PassSlipJdbcRepository passSlipRepository = new PassSlipJdbcRepository();
@@ -92,24 +78,41 @@ public class PassSlipIssuanceController {
     }
 
     private void setupPassTypeComboBox() {
-        passTypeComboBox.setItems(FXCollections.observableArrayList("Official Business", "Personal"));
+        // 🟢 ADDED: Emergency type
+        passTypeComboBox.setItems(FXCollections.observableArrayList("Official Business", "Personal", "Emergency"));
         passTypeComboBox.getSelectionModel().selectFirst();
+
+        // 🟢 ADDED: Listener to disable time fields if Emergency is selected
+        passTypeComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
+            boolean isEmergency = "Emergency".equals(newVal);
+
+            outHourField.setDisable(isEmergency);
+            outMinuteField.setDisable(isEmergency);
+            timeOutAmPmComboBox.setDisable(isEmergency);
+
+            inHourField.setDisable(isEmergency);
+            inMinuteField.setDisable(isEmergency);
+            timeInAmPmComboBox.setDisable(isEmergency);
+
+            if (isEmergency) {
+                outHourField.clear();
+                outMinuteField.clear();
+                inHourField.clear();
+                inMinuteField.clear();
+            }
+        });
     }
 
     private void setupTimeFields() {
-        // Setup AM/PM Dropdowns
         timeOutAmPmComboBox.setItems(FXCollections.observableArrayList("AM", "PM"));
         timeOutAmPmComboBox.getSelectionModel().select("AM");
 
         timeInAmPmComboBox.setItems(FXCollections.observableArrayList("AM", "PM"));
         timeInAmPmComboBox.getSelectionModel().select("PM");
 
-        // Formatter: Only allow exactly up to 2 numbers
         UnaryOperator<TextFormatter.Change> twoDigitFilter = change -> {
             String text = change.getControlNewText();
-            if (text.matches("[0-9]{0,2}")) {
-                return change;
-            }
+            if (text.matches("[0-9]{0,2}")) return change;
             return null;
         };
 
@@ -118,21 +121,17 @@ public class PassSlipIssuanceController {
         inHourField.setTextFormatter(new TextFormatter<>(twoDigitFilter));
         inMinuteField.setTextFormatter(new TextFormatter<>(twoDigitFilter));
 
-        // Auto-pad single digits with a zero when they click away (e.g., '9' becomes '09')
         addPaddingFocusListener(outHourField);
         addPaddingFocusListener(outMinuteField);
         addPaddingFocusListener(inHourField);
         addPaddingFocusListener(inMinuteField);
 
-        // Auto-Tab logic. When a box hits 2 characters, jump to the next logical input.
         setupAutoTab(outHourField, outMinuteField);
         setupAutoTab(outMinuteField, timeOutAmPmComboBox);
-
         setupAutoTab(inHourField, inMinuteField);
         setupAutoTab(inMinuteField, timeInAmPmComboBox);
     }
 
-    // Automatically moves focus to the next control when 2 digits are typed
     private void setupAutoTab(TextField current, Control next) {
         current.textProperty().addListener((obs, oldText, newText) -> {
             if (newText != null && newText.length() == 2 && (oldText == null || oldText.length() < 2)) {
@@ -141,7 +140,6 @@ public class PassSlipIssuanceController {
         });
     }
 
-    // Helper to format "9" to "09" automatically
     private void addPaddingFocusListener(TextField field) {
         field.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
             if (!isNowFocused && !field.getText().isEmpty() && field.getText().length() == 1) {
@@ -160,6 +158,7 @@ public class PassSlipIssuanceController {
         }
 
         String passType = passTypeComboBox.getValue();
+        boolean isEmergency = "Emergency".equals(passType);
         String destination = destinationField.getText() == null ? "" : destinationField.getText().trim();
         String reason = reasonTextArea.getText() == null ? "" : reasonTextArea.getText().trim();
 
@@ -168,7 +167,6 @@ public class PassSlipIssuanceController {
         String inHH = inHourField.getText() == null ? "" : inHourField.getText().trim();
         String inMM = inMinuteField.getText() == null ? "" : inMinuteField.getText().trim();
 
-        // Validations
         if (destination.isBlank()) {
             showStatus("Destination is required.", true);
             return;
@@ -177,74 +175,75 @@ public class PassSlipIssuanceController {
             showStatus("Reason / nature of pass is required.", true);
             return;
         }
-        if (outHH.isBlank() || outMM.isBlank() || inHH.isBlank() || inMM.isBlank()) {
-            showStatus("Please fill out all time fields completely.", true);
-            return;
+
+        // 🟢 MODIFIED: Bypass time validation for Emergency passes
+        String dbExpectedTimeOut = null;
+        String dbExpectedTimeIn = null;
+        String formattedTimeOut = "N/A";
+        String formattedTimeIn = "N/A";
+
+        if (!isEmergency) {
+            if (outHH.isBlank() || outMM.isBlank() || inHH.isBlank() || inMM.isBlank()) {
+                showStatus("Please fill out all time fields completely.", true);
+                return;
+            }
+
+            try {
+                int outHourInt = Integer.parseInt(outHH);
+                int outMinInt = Integer.parseInt(outMM);
+                int inHourInt = Integer.parseInt(inHH);
+                int inMinInt = Integer.parseInt(inMM);
+
+                if (outHourInt < 1 || outHourInt > 12 || inHourInt < 1 || inHourInt > 12) {
+                    showStatus("Hours must be between 01 and 12.", true);
+                    return;
+                }
+                if (outMinInt < 0 || outMinInt > 59 || inMinInt < 0 || inMinInt > 59) {
+                    showStatus("Minutes must be between 00 and 59.", true);
+                    return;
+                }
+
+                if (!isWithinWorkingHours(outHourInt, outMinInt, timeOutAmPmComboBox.getValue())) {
+                    showStatus("Estimated Time Out must be between 08:00 AM and 09:00 PM.", true);
+                    return;
+                }
+                if (!isWithinWorkingHours(inHourInt, inMinInt, timeInAmPmComboBox.getValue())) {
+                    showStatus("Estimated Time In must be between 08:00 AM and 09:00 PM.", true);
+                    return;
+                }
+
+                formattedTimeOut = String.format("%02d:%02d %s", outHourInt, outMinInt, timeOutAmPmComboBox.getValue());
+                formattedTimeIn = String.format("%02d:%02d %s", inHourInt, inMinInt, timeInAmPmComboBox.getValue());
+
+                int out24Hour = outHourInt;
+                if ("AM".equals(timeOutAmPmComboBox.getValue()) && outHourInt == 12) out24Hour = 0;
+                else if ("PM".equals(timeOutAmPmComboBox.getValue()) && outHourInt < 12) out24Hour += 12;
+                dbExpectedTimeOut = String.format("%02d:%02d", out24Hour, outMinInt);
+
+                int in24Hour = inHourInt;
+                if ("AM".equals(timeInAmPmComboBox.getValue()) && inHourInt == 12) in24Hour = 0;
+                else if ("PM".equals(timeInAmPmComboBox.getValue()) && inHourInt < 12) in24Hour += 12;
+                dbExpectedTimeIn = String.format("%02d:%02d", in24Hour, inMinInt);
+
+            } catch (NumberFormatException e) {
+                showStatus("Invalid numbers in time fields.", true);
+                return;
+            }
         }
-
-        int outHourInt, outMinInt, inHourInt, inMinInt;
-
-        // Validate time ranges and working hours
-        try {
-            outHourInt = Integer.parseInt(outHH);
-            outMinInt = Integer.parseInt(outMM);
-            inHourInt = Integer.parseInt(inHH);
-            inMinInt = Integer.parseInt(inMM);
-
-            if (outHourInt < 1 || outHourInt > 12 || inHourInt < 1 || inHourInt > 12) {
-                showStatus("Hours must be between 01 and 12.", true);
-                return;
-            }
-            if (outMinInt < 0 || outMinInt > 59 || inMinInt < 0 || inMinInt > 59) {
-                showStatus("Minutes must be between 00 and 59.", true);
-                return;
-            }
-
-            // Working hours validation (8:00 AM to 9:00 PM)
-            if (!isWithinWorkingHours(outHourInt, outMinInt, timeOutAmPmComboBox.getValue())) {
-                showStatus("Estimated Time Out must be between 08:00 AM and 09:00 PM.", true);
-                return;
-            }
-            if (!isWithinWorkingHours(inHourInt, inMinInt, timeInAmPmComboBox.getValue())) {
-                showStatus("Estimated Time In must be between 08:00 AM and 09:00 PM.", true);
-                return;
-            }
-
-        } catch (NumberFormatException e) {
-            showStatus("Invalid numbers in time fields.", true);
-            return;
-        }
-
-        // 1. Generate user-friendly strings for the combined text column
-        String formattedTimeOut = String.format("%02d:%02d %s", outHourInt, outMinInt, timeOutAmPmComboBox.getValue());
-        String formattedTimeIn = String.format("%02d:%02d %s", inHourInt, inMinInt, timeInAmPmComboBox.getValue());
 
         String finalReason = buildReason(passType, destination, reason)
                 + " | Est. Out: " + formattedTimeOut + " | Est. In: " + formattedTimeIn;
 
-        // 2. Convert AM/PM inputs into clean 24-Hour strings ("HH:mm") for PostgreSQL columns
-        int out24Hour = outHourInt;
-        if ("AM".equals(timeOutAmPmComboBox.getValue()) && outHourInt == 12) out24Hour = 0;
-        else if ("PM".equals(timeOutAmPmComboBox.getValue()) && outHourInt < 12) out24Hour += 12;
-        String dbExpectedTimeOut = String.format("%02d:%02d", out24Hour, outMinInt);
+        int issuedByUserId = 1;
 
-        int in24Hour = inHourInt;
-        if ("AM".equals(timeInAmPmComboBox.getValue()) && inHourInt == 12) in24Hour = 0;
-        else if ("PM".equals(timeInAmPmComboBox.getValue()) && inHourInt < 12) in24Hour += 12;
-        String dbExpectedTimeIn = String.format("%02d:%02d", in24Hour, inMinInt);
-
-        int issuedByUserId = 1; // Temporary ID
-
-        // 3. Make the repository call with matching parameters
         IssuePassSlipResult result = passSlipRepository.issuePassSlip(
                 selectedEmployee.getEmployeeId(),
                 finalReason,
                 issuedByUserId,
-                dbExpectedTimeOut, // Passes clean 24h format to expected_time_out
-                dbExpectedTimeIn   // Passes clean 24h format to expected_time_in
+                dbExpectedTimeOut,
+                dbExpectedTimeIn
         );
 
-        // 4. Handle UI Responses cleanly
         if (result.isSuccess()) {
             showStatus("Pass slip issued for " + selectedEmployee.getFullName() + ". Slip ID: " + result.getPassSlipId(), false);
 
@@ -255,7 +254,6 @@ public class PassSlipIssuanceController {
                     + " has been recorded. (Slip ID: " + result.getPassSlipId() + ")");
             successAlert.showAndWait();
 
-            // Clear form manually here to reset fields on success
             resetFormFields();
             setupEmployeeComboBox();
         } else {
@@ -263,32 +261,19 @@ public class PassSlipIssuanceController {
         }
     }
 
-    // Helper: Checks if the time is between 8:00 AM and 9:00 PM
     private boolean isWithinWorkingHours(int hour12, int minutes, String amPm) {
         int hour24 = hour12;
+        if ("AM".equals(amPm) && hour12 == 12) hour24 = 0;
+        else if ("PM".equals(amPm) && hour12 < 12) hour24 += 12;
 
-        // Convert to 24-hour format for easier math
-        if ("AM".equals(amPm) && hour12 == 12) {
-            hour24 = 0; // Midnight
-        } else if ("PM".equals(amPm) && hour12 < 12) {
-            hour24 += 12; // 1 PM becomes 13, etc.
-        }
-
-        // Before 8:00 AM
         if (hour24 < 8) return false;
-
-        // After 9:00 PM (21:00)
         if (hour24 > 21) return false;
-
-        // Exactly 9:01 PM or later
         if (hour24 == 21 && minutes > 0) return false;
-
         return true;
     }
 
     @FXML
     private void clearForm() {
-        // Confirmation dialog for canceling/clearing registration
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Confirm Action");
         alert.setHeaderText("Cancel Pass Slip Registration");
@@ -300,7 +285,6 @@ public class PassSlipIssuanceController {
         }
     }
 
-    // Extracted helper method to clean up and reset form fields
     private void resetFormFields() {
         employeeComboBox.getSelectionModel().clearSelection();
         departmentField.clear();

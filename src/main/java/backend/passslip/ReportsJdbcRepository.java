@@ -87,6 +87,7 @@ public class ReportsJdbcRepository {
                    CONCAT(e.first_name, ' ', e.last_name) AS name,
                    COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Personal%' THEN 1 END) AS personal_count,
                    COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Official%' THEN 1 END) AS official_count,
+                   COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Emergency%' THEN 1 END) AS emergency_count, -- 🟢 Added Emergency Count
                    COUNT(CASE WHEN ps.status::text ILIKE 'Approved' THEN 1 END) AS approved_count,
                    COUNT(CASE WHEN ps.status::text ILIKE 'Cancel%' THEN 1 END) AS canceled_count,
                    COUNT(CASE WHEN ps.status::text ILIKE 'Rejected' THEN 1 END) AS rejected_count,
@@ -110,6 +111,7 @@ public class ReportsJdbcRepository {
                             rs.getString("name"),
                             rs.getInt("personal_count"),
                             rs.getInt("official_count"),
+                            rs.getInt("emergency_count"), // 🟢 Added Emergency Count to Constructor
                             rs.getInt("approved_count"),
                             rs.getInt("canceled_count"),
                             rs.getInt("rejected_count"),

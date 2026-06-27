@@ -57,6 +57,9 @@ public class ReportsController {
     @FXML private TableColumn<ReportEmployeeSummary, Integer> officialCol;
     @FXML private TableColumn<ReportEmployeeSummary, Integer> totalCol;
     @FXML private TableColumn<ReportEmployeeSummary, Void> actionCol;
+    // 🟢 ADD THIS MISSING LINE HERE:
+    @FXML private TableColumn<ReportEmployeeSummary, Integer> emergencyCol;
+
 
     private final XYChart.Series<String, Number> officialSeries = new XYChart.Series<>();
     private final XYChart.Series<String, Number> personalSeries = new XYChart.Series<>();
@@ -102,6 +105,10 @@ public class ReportsController {
         employeeNameCol.setCellValueFactory(new PropertyValueFactory<>("employeeName"));
         personalCol.setCellValueFactory(new PropertyValueFactory<>("personalCount"));
         officialCol.setCellValueFactory(new PropertyValueFactory<>("officialCount"));
+
+        // 🟢 ADD THIS LINE HERE:
+        emergencyCol.setCellValueFactory(new PropertyValueFactory<>("emergencyCount"));
+
         totalCol.setCellValueFactory(new PropertyValueFactory<>("totalCount"));
 
         addButtonToTable();

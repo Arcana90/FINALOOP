@@ -2,7 +2,10 @@ package com.example.frontend_emp_pass_slip.controller;
 
 import backend.app.AppSettingsManager;
 import backend.passslip.PassSlipMonitoringRecord;
+import backend.passslip.PassSlipJdbcRepository;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -25,35 +28,54 @@ public class PassSlipDetailModalController {
     private PassSlipMonitoringRecord referenceRecord;
     private MonitoringDirectorController dashboardController;
     private Stage activeStage;
+
     private final MonitoringJdbcRepository dbService = new MonitoringJdbcRepository();
+    private final PassSlipJdbcRepository passSlipRepository = new PassSlipJdbcRepository();
+    private boolean isEmergencyPass = false;
 
     public void setPassSlipData(PassSlipMonitoringRecord record, MonitoringDirectorController controller, Stage stage) {
         this.referenceRecord = record;
         this.dashboardController = controller;
         this.activeStage = stage;
 
-        // Base Data Mapping
+        this.isEmergencyPass = false;
+
+        // 🌟 THE FIX IS HERE: We MUST use getReasonForLeaving() to get the full raw string that contains "Type: Emergency"
+        String rawReason = record.getReasonForLeaving();
+
+        if (rawReason != null && rawReason.contains("|")) {
+            String[] parts = rawReason.split("\\|");
+            for (String part : parts) {
+                part = part.trim();
+                if (part.startsWith("Type:")) {
+                    String type = part.replace("Type:", "").trim();
+                    this.isEmergencyPass = type.equalsIgnoreCase("Emergency");
+                    break;
+                }
+            }
+        } else if (rawReason != null && rawReason.toLowerCase().contains("emergency")) {
+            // Fallback just in case it doesn't have pipes
+            this.isEmergencyPass = true;
+        }
+
         modalSlipNoLabel.setText("Pass Slip No: " + record.getSlipNo());
         modalEmpIdLabel.setText("ID: " + record.getEmployeeId());
         modalNameLabel.setText(record.getFullName());
         modalDeptLabel.setText(record.getDepartment());
 
-        // 🌟 Apply dynamic time formatting safely
         String formattedRequestedTime = AppSettingsManager.getInstance().formatTimeString(record.getTimeRequested());
         modalTimeRequestedLabel.setText("Requested at: " + formattedRequestedTime);
 
-        // 🌟 FIXED: Extract clean fields directly from the modern record object
+        // We can safely use getDestination and getReason here for display purposes only
         modalDestinationLabel.setText(record.getDestination());
         modalReasonLabel.setText(record.getReason());
 
-        // 🌟 FIXED: Format output using the updated bulletproof string manager
         String estOut = AppSettingsManager.getInstance().formatTimeString(record.getExpectedTimeOut());
         String estIn = AppSettingsManager.getInstance().formatTimeString(record.getExpectedTimeIn());
 
         modalEstOutLabel.setText("Est. Out: " + estOut);
         modalEstInLabel.setText("Est. In: " + estIn);
 
-        // Action Options Rendering Check
         String status = record.getStatus();
         if (status != null && status.equalsIgnoreCase("For Approval")) {
             actionButtonContainer.setVisible(true);
@@ -70,8 +92,25 @@ public class PassSlipDetailModalController {
 
     @FXML
     private void handleApprove() {
-        boolean processingSuccess = dbService.updateSlipStatus(referenceRecord.getPassSlipId(), "Approved");
-        finalizeModalTransaction(processingSuccess);
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirm APPROVE");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Are you sure you want to APPROVE this pass slip?");
+
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+
+            System.out.println("DEBUG: Director Sending Emergency Flag as -> " + this.isEmergencyPass);
+
+            // 🌟 CLEANUP: Just pass the boolean we already successfully calculated in setPassSlipData
+            boolean success = passSlipRepository.approvePassSlip(referenceRecord.getPassSlipId(), this.isEmergencyPass);
+
+            if (success) {
+                dashboardController.refreshDashboardData();
+                activeStage.close();
+            } else {
+                new Alert(Alert.AlertType.ERROR, "Failed to approve pass slip.").show();
+            }
+        }
     }
 
     @FXML

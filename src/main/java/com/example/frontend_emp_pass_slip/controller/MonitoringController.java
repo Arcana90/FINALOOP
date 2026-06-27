@@ -121,7 +121,7 @@ public class MonitoringController {
 
     private void setupFilters() {
         statusFilter.setItems(FXCollections.observableArrayList(
-                "All Status", "For Approval", "Approved", "Out", "Returned", "Cancelled", "AWOL", "Rejected"
+                "All Status", "For Approval", "Approved", "Out", "Returned", "Cancelled", "AWOL", "Rejected", "Excused"
         ));
         statusFilter.getSelectionModel().selectFirst();
 
