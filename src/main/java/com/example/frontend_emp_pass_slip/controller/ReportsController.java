@@ -194,11 +194,10 @@ public class ReportsController {
     private void updateDailyData() {
         List<DailyActivitySummary> dbData = reportsRepository.findWeeklyDailyActivity();
         Map<String, DailyActivitySummary> dataMap = new HashMap<>();
-        for (DailyActivitySummary s : dbData) dataMap.put(s.getDay(), s);
+        for (DailyActivitySummary s : dbData) dataMap.put(s.getDayName(), s);
         String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
         for (String day : days) {
-            DailyActivitySummary summary = dataMap.getOrDefault(day, new DailyActivitySummary(day, 0, 0));
-            XYChart.Data<String, Number> offData = new XYChart.Data<>(day, summary.getOfficialCount());
+            DailyActivitySummary summary = dataMap.getOrDefault(day, new DailyActivitySummary(day, 0, 0, 0));            XYChart.Data<String, Number> offData = new XYChart.Data<>(day, summary.getOfficialCount());
             XYChart.Data<String, Number> persData = new XYChart.Data<>(day, summary.getPersonalCount());
             officialSeries.getData().add(offData); personalSeries.getData().add(persData);
             Platform.runLater(() -> {
@@ -211,8 +210,7 @@ public class ReportsController {
     private void updateMonthlyData() {
         List<MonthlyActivitySummary> dbData = reportsRepository.findMonthlyActivity();
         Map<String, MonthlyActivitySummary> dataMap = new HashMap<>();
-        for (MonthlyActivitySummary s : dbData) dataMap.put(s.getMonth(), s);
-
+        for (MonthlyActivitySummary s : dbData) dataMap.put(s.getMonthName(), s);
         String[] months = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
         for (String month : months) {
             MonthlyActivitySummary summary = dataMap.get(month);
@@ -235,7 +233,7 @@ public class ReportsController {
         int[] qPersonal = new int[4];
 
         for (MonthlyActivitySummary s : dbData) {
-            String m = s.getMonth();
+            String m = s.getMonthName();
             int idx = -1;
             if (m.equals("Jan") || m.equals("Feb") || m.equals("Mar")) idx = 0;
             else if (m.equals("Apr") || m.equals("May") || m.equals("Jun")) idx = 1;
@@ -370,7 +368,7 @@ public class ReportsController {
                     List<String> targetMonths = getTargetMonths(quarterDetailOption);
                     List<MonthlyActivitySummary> dbData = reportsRepository.findMonthlyActivity();
                     Map<String, MonthlyActivitySummary> map = new HashMap<>();
-                    for(MonthlyActivitySummary s : dbData) map.put(s.getMonth(), s);
+                    for(MonthlyActivitySummary s : dbData) map.put(s.getMonthName(), s);
 
                     for (String m : targetMonths) {
                         MonthlyActivitySummary s = map.get(m);
@@ -488,8 +486,7 @@ public class ReportsController {
                     List<String> targetMonths = getTargetMonths(quarterDetailOption);
                     List<MonthlyActivitySummary> dbData = reportsRepository.findMonthlyActivity();
                     Map<String, MonthlyActivitySummary> map = new HashMap<>();
-                    for(MonthlyActivitySummary s : dbData) map.put(s.getMonth(), s);
-
+                    for(MonthlyActivitySummary s : dbData) map.put(s.getMonthName(), s);
                     for (String m : targetMonths) {
                         MonthlyActivitySummary s = map.get(m);
                         int off = (s != null) ? s.getOfficialCount() : 0;

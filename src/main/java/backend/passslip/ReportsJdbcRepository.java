@@ -15,7 +15,8 @@ public class ReportsJdbcRepository {
         String sql = """
             SELECT TRIM(TO_CHAR(date_issued, 'Dy')) AS day_name,
                    COUNT(CASE WHEN reason_for_leaving ILIKE '%Official%' THEN 1 END) AS official_count,
-                   COUNT(CASE WHEN reason_for_leaving ILIKE '%Personal%' THEN 1 END) AS personal_count
+                   COUNT(CASE WHEN reason_for_leaving ILIKE '%Personal%' THEN 1 END) AS personal_count,
+                   COUNT(CASE WHEN reason_for_leaving ILIKE '%Emergency%' THEN 1 END) AS emergency_count
             FROM pass_slips
             WHERE date_issued >= DATE_TRUNC('week', CURRENT_DATE)
             GROUP BY TO_CHAR(date_issued, 'Dy'), EXTRACT(DOW FROM date_issued)
@@ -32,7 +33,8 @@ public class ReportsJdbcRepository {
                     list.add(new DailyActivitySummary(
                             rs.getString("day_name"),
                             rs.getInt("official_count"),
-                            rs.getInt("personal_count")
+                            rs.getInt("personal_count"),
+                            rs.getInt("emergency_count") // Ensure this 4th argument is here
                     ));
                 }
             }
@@ -50,7 +52,8 @@ public class ReportsJdbcRepository {
             SELECT TRIM(TO_CHAR(date_issued, 'Mon')) AS month_name,
                    COUNT(*) AS total_slips,
                    COUNT(CASE WHEN reason_for_leaving ILIKE '%Official%' THEN 1 END) AS official_count,
-                   COUNT(CASE WHEN reason_for_leaving ILIKE '%Personal%' THEN 1 END) AS personal_count
+                   COUNT(CASE WHEN reason_for_leaving ILIKE '%Personal%' THEN 1 END) AS personal_count,
+                   COUNT(CASE WHEN reason_for_leaving ILIKE '%Emergency%' THEN 1 END) AS emergency_count
             FROM pass_slips
             WHERE EXTRACT(YEAR FROM date_issued) = EXTRACT(YEAR FROM CURRENT_DATE)
             GROUP BY TO_CHAR(date_issued, 'Mon'), EXTRACT(MONTH FROM date_issued)
@@ -68,7 +71,8 @@ public class ReportsJdbcRepository {
                             rs.getString("month_name"),
                             rs.getInt("total_slips"),
                             rs.getInt("official_count"),
-                            rs.getInt("personal_count")
+                            rs.getInt("personal_count"),
+                            rs.getInt("emergency_count")
                     ));
                 }
             }
@@ -87,11 +91,13 @@ public class ReportsJdbcRepository {
                    CONCAT(e.first_name, ' ', e.last_name) AS name,
                    COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Personal%' THEN 1 END) AS personal_count,
                    COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Official%' THEN 1 END) AS official_count,
-                   COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Emergency%' THEN 1 END) AS emergency_count, -- 🟢 Added Emergency Count
+                   COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Emergency%' THEN 1 END) AS emergency_count,
                    COUNT(CASE WHEN ps.status::text ILIKE 'Approved' THEN 1 END) AS approved_count,
                    COUNT(CASE WHEN ps.status::text ILIKE 'Cancel%' THEN 1 END) AS canceled_count,
                    COUNT(CASE WHEN ps.status::text ILIKE 'Rejected' THEN 1 END) AS rejected_count,
-                   COUNT(CASE WHEN ps.time_in IS NULL AND ps.status::text ILIKE 'Approved' 
+                   COUNT(CASE WHEN ps.reason_for_leaving NOT ILIKE '%Emergency%'
+                               AND ps.time_in IS NULL 
+                               AND ps.status::text ILIKE 'Approved' 
                                AND (ps.date_issued < CURRENT_DATE OR (ps.date_issued = CURRENT_DATE AND LOCALTIME > ps.expected_time_in)) THEN 1 END) AS awol_count
             FROM employees e
             LEFT JOIN pass_slips ps ON e.employee_id = ps.employee_id
@@ -111,7 +117,7 @@ public class ReportsJdbcRepository {
                             rs.getString("name"),
                             rs.getInt("personal_count"),
                             rs.getInt("official_count"),
-                            rs.getInt("emergency_count"), // 🟢 Added Emergency Count to Constructor
+                            rs.getInt("emergency_count"),
                             rs.getInt("approved_count"),
                             rs.getInt("canceled_count"),
                             rs.getInt("rejected_count"),
@@ -130,7 +136,6 @@ public class ReportsJdbcRepository {
     public List<EmployeePassSlipDetail> getEmployeePassSlipDetails(String employeeId) {
         List<EmployeePassSlipDetail> list = new ArrayList<>();
 
-        // Fixed: Cast timestamps to text so AppSettingsManager can format 12h/24h dynamically
         String sql = """
             SELECT ps.date_issued::text AS date_issued,
                    e.employee_id, 
@@ -159,7 +164,6 @@ public class ReportsJdbcRepository {
                         String destination = "N/A";
                         String actualReason = "N/A";
 
-                        // Intelligent Prefix Stripping Engine
                         if (rawReason != null) {
                             if (rawReason.contains("|")) {
                                 String[] parts = rawReason.split("\\|");
@@ -176,6 +180,8 @@ public class ReportsJdbcRepository {
                             } else {
                                 if (rawReason.toLowerCase().contains("official")) {
                                     slipType = "Official Business";
+                                } else if (rawReason.toLowerCase().contains("emergency")) {
+                                    slipType = "Emergency";
                                 }
                                 actualReason = rawReason;
                             }

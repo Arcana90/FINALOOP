@@ -18,10 +18,11 @@ public class PassSlipRepository {
     private static final Logger LOGGER = Logger.getLogger(PassSlipRepository.class.getName());
 
     // 1. FIXED SQL: We use Manila time directly in the query. Notice there is no '?' for time_requested.
+// 🟢 ADDED: date_issued explicitly forced to Manila time
     private static final String INSERT_PASS_SLIP = """
     INSERT INTO pass_slips 
-    (pass_slip_id, employee_id, destination, reason_for_leaving, status, time_requested) 
-    VALUES (?, ?, ?, ?, ?, (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time)
+    (pass_slip_id, employee_id, destination, reason_for_leaving, status, date_issued, time_requested) 
+    VALUES (?, ?, ?, ?, ?, (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date, (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time)
     """;
 
     private static final String UPDATE_EMPLOYEE_STATUS =

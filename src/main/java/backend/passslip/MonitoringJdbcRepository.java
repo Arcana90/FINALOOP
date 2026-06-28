@@ -9,13 +9,14 @@
     import java.sql.SQLException;
     
     public class MonitoringJdbcRepository {
-    
+
         public List<PassSlipMonitoringRecord> findAll() {
-            // 1. Run the 24/7 smart validation first
-            runShiftValidation();
-    
-            // 2. Declare variables ONLY ONCE here
-            List<PassSlipMonitoringRecord> records = new ArrayList<>();
+                // 🟢 TEMPORARY HACK: Commented out to stop the system from
+                // auto-cancelling slips during your late-night testing.
+                // runShiftValidation();
+
+                List<PassSlipMonitoringRecord> records = new ArrayList<>();
+                // ... rest of your code
             Connection connection = null;
     
             String sql = """
@@ -172,38 +173,43 @@
                 }
             }
         }
-    
+
         public boolean markAsReturned(int passSlipId) {
             Connection connection = null;
-    
+
+            // 🌟 FIX: Removed the "Type" strings from the IN clause.
+            // We now look for 'Excused' which is the actual database status
+            // assigned to emergency slips when they leave.
             String sql = """
-                UPDATE pass_slips
-                SET 
-                    time_in = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time,
-                    duration_minutes = GREATEST(
-                        0,
-                        FLOOR(EXTRACT(EPOCH FROM (
-                            (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time - time_out
-                        )) / 60)::INT
-                    ),
-                    status = 'Returned'::slip_status
-                WHERE pass_slip_id = ?
-                  AND status = 'Out'
-                """;
-    
+        UPDATE pass_slips
+        SET 
+            time_in = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time,
+            duration_minutes = GREATEST(
+                0,
+                FLOOR(EXTRACT(EPOCH FROM (
+                    (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time - COALESCE(time_out, time_requested)
+                )) / 60)::INT
+            ),
+            status = 'Returned'::slip_status
+        WHERE pass_slip_id = ?
+          AND status IN ('Out', 'Approved', 'Excused')
+        """;
+
             try {
-                connection = ConnectionPoolManager.getInstance().acquire();
-    
+                connection = backend.db.ConnectionPoolManager.getInstance().acquire();
+
                 try (PreparedStatement statement = connection.prepareStatement(sql)) {
                     statement.setInt(1, passSlipId);
                     return statement.executeUpdate() > 0;
                 }
-    
+
             } catch (Exception e) {
                 e.printStackTrace();
                 return false;
             } finally {
-                ConnectionPoolManager.getInstance().release(connection);
+                if (connection != null) {
+                    backend.db.ConnectionPoolManager.getInstance().release(connection);
+                }
             }
         }
     
