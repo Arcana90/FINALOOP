@@ -6,8 +6,6 @@ import backend.passslip.PassSlipMonitoringRecord;
 import backend.passslip.PassSlipJdbcRepository;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -20,7 +18,7 @@ public class AdminPassSlipDetailModalController {
     @FXML private Label modalEmpIdLabel;
     @FXML private Label modalNameLabel;
     @FXML private Label modalDeptLabel;
-    @FXML private Label modalTypeLabel; // 🟢 ADDED
+    @FXML private Label modalTypeLabel;
     @FXML private Label modalDestinationLabel;
     @FXML private Label modalReasonLabel;
     @FXML private Label modalEstOutLabel;
@@ -112,55 +110,32 @@ public class AdminPassSlipDetailModalController {
 
     @FXML
     private void handleApprove() {
-        showDetailedConfirmation("APPROVE", () -> {
-            boolean success = passSlipRepository.approvePassSlip(record.getPassSlipId(), isEmergencyPass);
-            if (success) {
-                ((Stage) modalBadgeLabel.getScene().getWindow()).close();
-            } else {
-                new Alert(Alert.AlertType.ERROR, "Failed to approve pass slip.").show();
-            }
-        });
-    }
-
-    @FXML private void handleReject() { processAction("Rejected", "REJECT"); }
-    @FXML private void handleCancel() { processAction("Cancelled", "CANCEL"); }
-
-    private void processAction(String status, String actionLabel) {
-        showDetailedConfirmation(actionLabel, () -> {
-            boolean success = repository.updateSlipStatus(record.getPassSlipId(), status);
-            if (success) {
-                ((Stage) modalBadgeLabel.getScene().getWindow()).close();
-            } else {
-                new Alert(Alert.AlertType.ERROR, "Failed to update status.").show();
-            }
-        });
-    }
-
-    private void showDetailedConfirmation(String actionLabel, Runnable onConfirm) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Confirm " + actionLabel);
-        confirm.setHeaderText(null);
-        if (modalBadgeLabel.getScene() != null && modalBadgeLabel.getScene().getWindow() != null) {
-            confirm.initOwner(modalBadgeLabel.getScene().getWindow());
+        // Direct execution - no popup
+        boolean success = passSlipRepository.approvePassSlip(record.getPassSlipId(), isEmergencyPass);
+        if (success) {
+            ((Stage) modalBadgeLabel.getScene().getWindow()).close();
+        } else {
+            new Alert(Alert.AlertType.ERROR, "Failed to approve pass slip.").show();
         }
+    }
 
-        String content = String.format(
-                "Are you sure you want to %s this pass slip?\n\n" +
-                        "Slip No:\t\t%s\n" +
-                        "Pass Type:\t%s\n" +
-                        "Reason:\t\t%s\n\n" +
-                        "Please verify before proceeding.",
-                actionLabel, record.getSlipNo(), passType,
-                record.getReason() != null ? record.getReason().replace("\n", " ") : "N/A"
-        );
+    @FXML
+    private void handleReject() {
+        processAction("Rejected");
+    }
 
-        confirm.setContentText(content);
-        ButtonType confirmBtn = new ButtonType(actionLabel, ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelBtn = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-        confirm.getButtonTypes().setAll(confirmBtn, cancelBtn);
+    @FXML
+    private void handleCancel() {
+        processAction("Cancelled");
+    }
 
-        confirm.showAndWait().ifPresent(response -> {
-            if (response == confirmBtn) onConfirm.run();
-        });
+    private void processAction(String status) {
+        // Direct execution - no popup
+        boolean success = repository.updateSlipStatus(record.getPassSlipId(), status);
+        if (success) {
+            ((Stage) modalBadgeLabel.getScene().getWindow()).close();
+        } else {
+            new Alert(Alert.AlertType.ERROR, "Failed to update status.").show();
+        }
     }
 }

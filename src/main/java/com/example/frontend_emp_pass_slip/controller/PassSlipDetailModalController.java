@@ -5,7 +5,6 @@ import backend.passslip.PassSlipMonitoringRecord;
 import backend.passslip.PassSlipJdbcRepository;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -19,7 +18,7 @@ public class PassSlipDetailModalController {
     @FXML private Label modalEmpIdLabel;
     @FXML private Label modalNameLabel;
     @FXML private Label modalDeptLabel;
-    @FXML private Label modalTypeLabel; // 🟢 ADDED
+    @FXML private Label modalTypeLabel;
     @FXML private Label modalDestinationLabel;
     @FXML private Label modalReasonLabel;
     @FXML private Label modalEstOutLabel;
@@ -58,7 +57,7 @@ public class PassSlipDetailModalController {
         modalEmpIdLabel.setText("ID: " + record.getEmployeeId());
         modalNameLabel.setText(record.getFullName());
         modalDeptLabel.setText(record.getDepartment());
-        modalTypeLabel.setText(passType); // 🟢 Updated UI
+        modalTypeLabel.setText(passType);
 
         String formattedRequestedTime = AppSettingsManager.getInstance().formatTimeString(record.getTimeRequested());
         modalTimeRequestedLabel.setText("Requested at: " + formattedRequestedTime);
@@ -88,24 +87,19 @@ public class PassSlipDetailModalController {
 
     @FXML
     private void handleApprove() {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Confirm APPROVE");
-        confirm.setHeaderText(null);
-        confirm.setContentText("Are you sure you want to APPROVE this pass slip?");
-
-        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-            boolean success = passSlipRepository.approvePassSlip(referenceRecord.getPassSlipId(), this.isEmergencyPass);
-            if (success) {
-                dashboardController.refreshDashboardData();
-                activeStage.close();
-            } else {
-                new Alert(Alert.AlertType.ERROR, "Failed to approve pass slip.").show();
-            }
+        // Direct execution - no confirmation popup
+        boolean success = passSlipRepository.approvePassSlip(referenceRecord.getPassSlipId(), this.isEmergencyPass);
+        if (success) {
+            dashboardController.refreshDashboardData();
+            activeStage.close();
+        } else {
+            new Alert(Alert.AlertType.ERROR, "Failed to approve pass slip.").show();
         }
     }
 
     @FXML
     private void handleReject() {
+        // Direct execution
         boolean processingSuccess = dbService.updateSlipStatus(referenceRecord.getPassSlipId(), "Rejected");
         finalizeModalTransaction(processingSuccess);
     }

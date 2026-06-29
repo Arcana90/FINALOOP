@@ -9,6 +9,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
@@ -78,11 +80,9 @@ public class PassSlipIssuanceController {
     }
 
     private void setupPassTypeComboBox() {
-        // 🟢 ADDED: Emergency type
         passTypeComboBox.setItems(FXCollections.observableArrayList("Official Business", "Personal", "Emergency"));
         passTypeComboBox.getSelectionModel().selectFirst();
 
-        // 🟢 ADDED: Listener to disable time fields if Emergency is selected
         passTypeComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
             boolean isEmergency = "Emergency".equals(newVal);
 
@@ -176,12 +176,12 @@ public class PassSlipIssuanceController {
             return;
         }
 
-        // 🟢 MODIFIED: Bypass time validation for Emergency passes
         String dbExpectedTimeOut = null;
         String dbExpectedTimeIn = null;
         String formattedTimeOut = "N/A";
         String formattedTimeIn = "N/A";
 
+        // TIME VALIDATION BLOCK (Bypassed if Emergency)
         if (!isEmergency) {
             if (outHH.isBlank() || outMM.isBlank() || inHH.isBlank() || inMM.isBlank()) {
                 showStatus("Please fill out all time fields completely.", true);
@@ -218,11 +218,28 @@ public class PassSlipIssuanceController {
                 int out24Hour = outHourInt;
                 if ("AM".equals(timeOutAmPmComboBox.getValue()) && outHourInt == 12) out24Hour = 0;
                 else if ("PM".equals(timeOutAmPmComboBox.getValue()) && outHourInt < 12) out24Hour += 12;
-                dbExpectedTimeOut = String.format("%02d:%02d", out24Hour, outMinInt);
 
                 int in24Hour = inHourInt;
                 if ("AM".equals(timeInAmPmComboBox.getValue()) && inHourInt == 12) in24Hour = 0;
                 else if ("PM".equals(timeInAmPmComboBox.getValue()) && inHourInt < 12) in24Hour += 12;
+
+                // REAL-TIME COMPARISON
+                LocalTime currentTime = LocalTime.now();
+                LocalTime estimatedOutTime = LocalTime.of(out24Hour, outMinInt);
+                LocalTime estimatedInTime = LocalTime.of(in24Hour, inMinInt);
+
+                if (estimatedOutTime.isBefore(currentTime)) {
+                    String formattedCurrentTime = currentTime.format(DateTimeFormatter.ofPattern("hh:mm a"));
+                    showStatus("Estimated Time Out cannot be earlier than the current time (" + formattedCurrentTime + ").", true);
+                    return;
+                }
+
+                if (estimatedInTime.isBefore(estimatedOutTime) || estimatedInTime.equals(estimatedOutTime)) {
+                    showStatus("Estimated Time In must be later than Estimated Time Out.", true);
+                    return;
+                }
+
+                dbExpectedTimeOut = String.format("%02d:%02d", out24Hour, outMinInt);
                 dbExpectedTimeIn = String.format("%02d:%02d", in24Hour, inMinInt);
 
             } catch (NumberFormatException e) {
