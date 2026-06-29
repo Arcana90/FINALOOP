@@ -19,6 +19,7 @@ public class PassSlipDetailModalController {
     @FXML private Label modalEmpIdLabel;
     @FXML private Label modalNameLabel;
     @FXML private Label modalDeptLabel;
+    @FXML private Label modalTypeLabel; // 🟢 ADDED
     @FXML private Label modalDestinationLabel;
     @FXML private Label modalReasonLabel;
     @FXML private Label modalEstOutLabel;
@@ -38,35 +39,30 @@ public class PassSlipDetailModalController {
         this.dashboardController = controller;
         this.activeStage = stage;
 
-        this.isEmergencyPass = false;
-
-        // 🌟 THE FIX IS HERE: We MUST use getReasonForLeaving() to get the full raw string that contains "Type: Emergency"
         String rawReason = record.getReasonForLeaving();
+        String passType = "Standard"; // Default
+        this.isEmergencyPass = false;
 
         if (rawReason != null && rawReason.contains("|")) {
             String[] parts = rawReason.split("\\|");
             for (String part : parts) {
                 part = part.trim();
                 if (part.startsWith("Type:")) {
-                    String type = part.replace("Type:", "").trim();
-                    this.isEmergencyPass = type.equalsIgnoreCase("Emergency");
-                    break;
+                    passType = part.replace("Type:", "").trim();
+                    this.isEmergencyPass = passType.equalsIgnoreCase("Emergency");
                 }
             }
-        } else if (rawReason != null && rawReason.toLowerCase().contains("emergency")) {
-            // Fallback just in case it doesn't have pipes
-            this.isEmergencyPass = true;
         }
 
         modalSlipNoLabel.setText("Pass Slip No: " + record.getSlipNo());
         modalEmpIdLabel.setText("ID: " + record.getEmployeeId());
         modalNameLabel.setText(record.getFullName());
         modalDeptLabel.setText(record.getDepartment());
+        modalTypeLabel.setText(passType); // 🟢 Updated UI
 
         String formattedRequestedTime = AppSettingsManager.getInstance().formatTimeString(record.getTimeRequested());
         modalTimeRequestedLabel.setText("Requested at: " + formattedRequestedTime);
 
-        // We can safely use getDestination and getReason here for display purposes only
         modalDestinationLabel.setText(record.getDestination());
         modalReasonLabel.setText(record.getReason());
 
@@ -98,12 +94,7 @@ public class PassSlipDetailModalController {
         confirm.setContentText("Are you sure you want to APPROVE this pass slip?");
 
         if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-
-            System.out.println("DEBUG: Director Sending Emergency Flag as -> " + this.isEmergencyPass);
-
-            // 🌟 CLEANUP: Just pass the boolean we already successfully calculated in setPassSlipData
             boolean success = passSlipRepository.approvePassSlip(referenceRecord.getPassSlipId(), this.isEmergencyPass);
-
             if (success) {
                 dashboardController.refreshDashboardData();
                 activeStage.close();

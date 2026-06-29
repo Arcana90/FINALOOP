@@ -33,14 +33,19 @@
         <Label text="Department:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
         <Label fx:id="modalDeptLabel" text="N/A" style="-fx-text-fill: #1e293b;" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
-        <Label text="Destination:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-        <Label fx:id="modalDestinationLabel" text="N/A" style="-fx-text-fill: #1e293b;" wrapText="true" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        <!-- 🟢 New Pass Type Row -->
+        <Label text="Pass Type:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <Label fx:id="modalTypeLabel" text="Standard" style="-fx-text-fill: #1e293b; -fx-font-weight: bold;" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
-        <Label text="Reason / Nature:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-        <Label fx:id="modalReasonLabel" text="N/A" style="-fx-text-fill: #1e293b;" wrapText="true" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+        <!-- 🟢 Shift existing rows down by 1 (change their rowIndex) -->
+        <Label text="Destination:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <Label fx:id="modalDestinationLabel" text="N/A" style="-fx-text-fill: #1e293b;" wrapText="true" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
 
-        <Label text="Estimated Windows:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-        <VBox spacing="2" GridPane.rowIndex="5" GridPane.columnIndex="1">
+        <Label text="Reason / Nature:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <Label fx:id="modalReasonLabel" text="N/A" style="-fx-text-fill: #1e293b;" wrapText="true" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+        <Label text="Estimated Windows:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+        <VBox spacing="2" GridPane.rowIndex="6" GridPane.columnIndex="1">
             <Label fx:id="modalEstOutLabel" text="Est. Out: --:--" style="-fx-text-fill: #e11d48; -fx-font-size: 12px; -fx-font-weight: bold;"/>
             <Label fx:id="modalEstInLabel" text="Est. In: --:--" style="-fx-text-fill: #0d9488; -fx-font-size: 12px; -fx-font-weight: bold;"/>
         </VBox>

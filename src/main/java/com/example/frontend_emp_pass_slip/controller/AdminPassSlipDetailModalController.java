@@ -3,9 +3,10 @@ package com.example.frontend_emp_pass_slip.controller;
 import backend.app.AppSettingsManager;
 import backend.passslip.MonitoringJdbcRepository;
 import backend.passslip.PassSlipMonitoringRecord;
-import backend.passslip.PassSlipJdbcRepository; // 🟢 ADDED
+import backend.passslip.PassSlipJdbcRepository;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -19,6 +20,7 @@ public class AdminPassSlipDetailModalController {
     @FXML private Label modalEmpIdLabel;
     @FXML private Label modalNameLabel;
     @FXML private Label modalDeptLabel;
+    @FXML private Label modalTypeLabel; // 🟢 ADDED
     @FXML private Label modalDestinationLabel;
     @FXML private Label modalReasonLabel;
     @FXML private Label modalEstOutLabel;
@@ -27,8 +29,10 @@ public class AdminPassSlipDetailModalController {
 
     private PassSlipMonitoringRecord record;
     private final MonitoringJdbcRepository repository = new MonitoringJdbcRepository();
-    private final PassSlipJdbcRepository passSlipRepository = new PassSlipJdbcRepository(); // 🟢 ADDED
-    private boolean isEmergencyPass = false; // 🟢 ADDED
+    private final PassSlipJdbcRepository passSlipRepository = new PassSlipJdbcRepository();
+
+    private boolean isEmergencyPass = false;
+    private String passType = "Standard";
 
     public void setRecord(PassSlipMonitoringRecord record) {
         this.record = record;
@@ -54,7 +58,8 @@ public class AdminPassSlipDetailModalController {
 
         String destination = "N/A";
         String nature = "N/A";
-        isEmergencyPass = false; // Reset state
+        passType = "Standard";
+        isEmergencyPass = false;
 
         if (rawReason != null && rawReason.contains("|")) {
             String[] parts = rawReason.split("\\|");
@@ -65,15 +70,15 @@ public class AdminPassSlipDetailModalController {
                 } else if (part.startsWith("Reason:")) {
                     nature = part.replace("Reason:", "").trim();
                 } else if (part.startsWith("Type:")) {
-                    // 🟢 Extract the pass type to check for emergency
-                    String type = part.replace("Type:", "").trim();
-                    isEmergencyPass = type.equalsIgnoreCase("Emergency");
+                    passType = part.replace("Type:", "").trim();
+                    isEmergencyPass = passType.equalsIgnoreCase("Emergency");
                 }
             }
         } else {
             nature = rawReason != null ? rawReason : "N/A";
         }
 
+        modalTypeLabel.setText(passType);
         modalDestinationLabel.setText(destination);
         modalReasonLabel.setText(nature);
 
@@ -82,7 +87,6 @@ public class AdminPassSlipDetailModalController {
 
     private void setupStatusBadge(String status) {
         if (status == null) status = "UNKNOWN";
-
         boolean isPending = status.equalsIgnoreCase("For Approval");
 
         actionButtonContainer.setVisible(isPending);
@@ -108,38 +112,55 @@ public class AdminPassSlipDetailModalController {
 
     @FXML
     private void handleApprove() {
-        // 🟢 MODIFIED: Calls your new repository method allowing emergency pass auto-time-out
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Confirm APPROVE");
-        confirm.setHeaderText(null);
-        confirm.setContentText("Are you sure you want to APPROVE this pass slip?");
-
-        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+        showDetailedConfirmation("APPROVE", () -> {
             boolean success = passSlipRepository.approvePassSlip(record.getPassSlipId(), isEmergencyPass);
             if (success) {
                 ((Stage) modalBadgeLabel.getScene().getWindow()).close();
             } else {
                 new Alert(Alert.AlertType.ERROR, "Failed to approve pass slip.").show();
             }
-        }
+        });
     }
 
     @FXML private void handleReject() { processAction("Rejected", "REJECT"); }
     @FXML private void handleCancel() { processAction("Cancelled", "CANCEL"); }
 
     private void processAction(String status, String actionLabel) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Confirm " + actionLabel);
-        confirm.setHeaderText(null);
-        confirm.setContentText("Are you sure you want to " + actionLabel + " this pass slip?");
-
-        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+        showDetailedConfirmation(actionLabel, () -> {
             boolean success = repository.updateSlipStatus(record.getPassSlipId(), status);
             if (success) {
                 ((Stage) modalBadgeLabel.getScene().getWindow()).close();
             } else {
                 new Alert(Alert.AlertType.ERROR, "Failed to update status.").show();
             }
+        });
+    }
+
+    private void showDetailedConfirmation(String actionLabel, Runnable onConfirm) {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirm " + actionLabel);
+        confirm.setHeaderText(null);
+        if (modalBadgeLabel.getScene() != null && modalBadgeLabel.getScene().getWindow() != null) {
+            confirm.initOwner(modalBadgeLabel.getScene().getWindow());
         }
+
+        String content = String.format(
+                "Are you sure you want to %s this pass slip?\n\n" +
+                        "Slip No:\t\t%s\n" +
+                        "Pass Type:\t%s\n" +
+                        "Reason:\t\t%s\n\n" +
+                        "Please verify before proceeding.",
+                actionLabel, record.getSlipNo(), passType,
+                record.getReason() != null ? record.getReason().replace("\n", " ") : "N/A"
+        );
+
+        confirm.setContentText(content);
+        ButtonType confirmBtn = new ButtonType(actionLabel, ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelBtn = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        confirm.getButtonTypes().setAll(confirmBtn, cancelBtn);
+
+        confirm.showAndWait().ifPresent(response -> {
+            if (response == confirmBtn) onConfirm.run();
+        });
     }
 }

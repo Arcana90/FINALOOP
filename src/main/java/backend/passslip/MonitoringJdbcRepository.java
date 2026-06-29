@@ -13,7 +13,7 @@
         public List<PassSlipMonitoringRecord> findAll() {
                 // 🟢 TEMPORARY HACK: Commented out to stop the system from
                 // auto-cancelling slips during your late-night testing.
-                // runShiftValidation();
+                runShiftValidation();
 
                 List<PassSlipMonitoringRecord> records = new ArrayList<>();
                 // ... rest of your code

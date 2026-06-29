@@ -33,20 +33,25 @@
         <Label text="Department:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
         <Label fx:id="modalDeptLabel" text="N/A" style="-fx-text-fill: #1e293b;" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
-        <Label text="Destination:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-        <Label fx:id="modalDestinationLabel" text="N/A" style="-fx-text-fill: #1e293b;" wrapText="true" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        <!-- New Pass Type Row -->
+        <Label text="Pass Type:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <Label fx:id="modalTypeLabel" text="Standard" style="-fx-text-fill: #1e293b; -fx-font-weight: bold;" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
-        <Label text="Reason / Nature:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-        <Label fx:id="modalReasonLabel" text="N/A" style="-fx-text-fill: #1e293b;" wrapText="true" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+        <!-- Shifted Rows Below -->
+        <Label text="Destination:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <Label fx:id="modalDestinationLabel" text="N/A" style="-fx-text-fill: #1e293b;" wrapText="true" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
 
-        <Label text="Estimated Windows:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
-        <VBox spacing="2" GridPane.rowIndex="5" GridPane.columnIndex="1">
+        <Label text="Reason / Nature:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <Label fx:id="modalReasonLabel" text="N/A" style="-fx-text-fill: #1e293b;" wrapText="true" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+        <Label text="Estimated Windows:" style="-fx-text-fill: #64748b; -fx-font-weight: bold;" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+        <VBox spacing="2" GridPane.rowIndex="6" GridPane.columnIndex="1">
             <Label fx:id="modalEstOutLabel" text="Est. Out: --:--" style="-fx-text-fill: #e11d48; -fx-font-size: 12px; -fx-font-weight: bold;"/>
             <Label fx:id="modalEstInLabel" text="Est. In: --:--" style="-fx-text-fill: #0d9488; -fx-font-size: 12px; -fx-font-weight: bold;"/>
         </VBox>
     </GridPane>
 
-    <!-- Contextual Control Container: ONLY CANCEL FOR ADMIN -->
+    <!-- Contextual Control Container -->
     <HBox fx:id="actionButtonContainer" spacing="10" alignment="CENTER" style="-fx-padding: 20 0 0 0;">
         <Button text="Approve" onAction="#handleApprove" style="-fx-background-color: #16a34a; -fx-text-fill: white;" />
         <Button text="Reject" onAction="#handleReject" style="-fx-background-color: #dc2626; -fx-text-fill: white;" />

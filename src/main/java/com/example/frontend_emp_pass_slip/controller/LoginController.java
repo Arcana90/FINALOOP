@@ -49,7 +49,7 @@ public class LoginController {
             // Unified clean base label style rule for maximum contrast
             usernameField.clear();
             passwordField.clear();
-            statusLabel.setText("");
+            statusLabel.setText("   ");
             String baseLabelStyle = "-fx-text-fill: #ffffff;";
             welcomePortalLabel.setStyle("-fx-text-fill: #ffffff; -fx-font-weight: bold;");
             selectPortalLabel.setStyle(baseLabelStyle);
@@ -221,10 +221,70 @@ public class LoginController {
     }
 
     @FXML private void handleTerms() {
-        showTextDialog("Terms and Conditions", "Terms and Conditions — Pass Slip System", "Standard Terms apply...");
+        showTextDialog(                "Terms and Conditions",
+                "Terms and Conditions — Pass Slip System",
+                "1. ACCEPTANCE OF TERMS\n"
+                        + "By using this system, you agree to be bound by these Terms and Conditions. "
+                        + "Unauthorized access or use of this system is strictly prohibited.\n\n"
+                        + "2. AUTHORIZED USE\n"
+                        + "This system is intended solely for authorized personnel of the organization "
+                        + "for the purpose of managing employee pass slips and monitoring employee "
+                        + "time-in and time-out records.\n\n"
+                        + "3. ACCURACY OF INFORMATION\n"
+                        + "Users are responsible for the accuracy and completeness of all data entered "
+                        + "into the system. Falsification of records may result in disciplinary action.\n\n"
+                        + "4. ACCOUNT SECURITY\n"
+                        + "Users must keep their login credentials confidential. You are responsible for "
+                        + "all activities that occur under your account. Report any unauthorized access "
+                        + "to the system administrator immediately.\n\n"
+                        + "5. DATA OWNERSHIP\n"
+                        + "All data entered into this system remains the property of the organization. "
+                        + "Users must not export, copy, or distribute system data without prior written "
+                        + "authorization from management.\n\n"
+                        + "6. MODIFICATIONS\n"
+                        + "The organization reserves the right to modify these Terms and Conditions at "
+                        + "any time. Continued use of the system constitutes acceptance of any changes.\n\n"
+                        + "7. TERMINATION\n"
+                        + "Access to this system may be revoked at any time at the discretion of the "
+                        + "system administrator or management, with or without notice.\n\n"
+                        + "By logging in, you confirm that you have read, understood, and agree to "
+                        + "these Terms and Conditions."
+        );
     }
 
     @FXML private void handlePrivacy() {
-        showTextDialog("Privacy Policy", "Privacy Policy — Pass Slip System", "Standard Privacy Rules apply...");
+        showTextDialog("Privacy Policy",
+                "Privacy Policy — Pass Slip System",
+                "EFFECTIVE DATE: January 1, 2025\n\n"
+                        + "1. INFORMATION WE COLLECT\n"
+                        + "The Pass Slip System collects the following personal information for "
+                        + "operational purposes:\n"
+                        + "  • Employee name, ID, department, and position\n"
+                        + "  • Contact information (email, contact number)\n"
+                        + "  • Time-in and time-out records\n"
+                        + "  • Pass slip details including destination and reason for leaving\n\n"
+                        + "2. HOW WE USE YOUR INFORMATION\n"
+                        + "Collected data is used exclusively to:\n"
+                        + "  • Track and manage employee movements within and outside the workplace\n"
+                        + "  • Generate operational reports for management\n"
+                        + "  • Ensure workplace security and compliance\n\n"
+                        + "3. DATA RETENTION\n"
+                        + "Employee records and pass slip data are retained for a period as defined "
+                        + "by the organization's data governance policy. Records may be archived "
+                        + "or deleted at the discretion of the system administrator.\n\n"
+                        + "4. DATA SECURITY\n"
+                        + "We implement reasonable technical and organizational measures to protect "
+                        + "your personal information against unauthorized access, loss, or misuse. "
+                        + "Access to the system is restricted to authorized personnel only.\n\n"
+                        + "5. DATA SHARING\n"
+                        + "Personal information collected through this system is not sold, rented, "
+                        + "or shared with third parties outside the organization, except where "
+                        + "required by law.\n\n"
+                        + "6. YOUR RIGHTS\n"
+                        + "Employees may request access to, correction of, or deletion of their "
+                        + "personal data by contacting the HR department or system administrator.\n\n"
+                        + "7. CONTACT\n"
+                        + "For questions or concerns regarding this Privacy Policy, please contact "
+                        + "your system administrator or HR representative.");
     }
 }

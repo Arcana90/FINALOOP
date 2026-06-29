@@ -49,7 +49,6 @@ public class MonitoringGuardController {
         employeeIdColumn.setCellValueFactory(new PropertyValueFactory<>("employeeId"));
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
 
-        // Dynamic Date Formatter
         dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
         dateColumn.setCellFactory(col -> new TableCell<>() {
             @Override
@@ -59,7 +58,6 @@ public class MonitoringGuardController {
             }
         });
 
-        // Dynamic Time Out Formatter
         timeOutColumn.setCellValueFactory(new PropertyValueFactory<>("timeOut"));
         timeOutColumn.setCellFactory(col -> new TableCell<>() {
             @Override
@@ -69,7 +67,6 @@ public class MonitoringGuardController {
             }
         });
 
-        // Dynamic Time In Formatter
         timeInColumn.setCellValueFactory(new PropertyValueFactory<>("timeIn"));
         timeInColumn.setCellFactory(col -> new TableCell<>() {
             @Override
@@ -86,132 +83,139 @@ public class MonitoringGuardController {
 
             {
                 pane.setStyle("-fx-alignment: CENTER; -fx-spacing: 10;");
-
                 btnOut.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
                 btnIn.setStyle("-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
 
                 btnOut.setOnAction(event -> {
-                    PassSlipMonitoringRecord record = getTableView().getItems().get(getIndex());
-
-                    // Call the dialog instead of the repository directly
-                    showConfirmationDialog(record, "Time Out", () -> {
-                        if (repository.markAsOut(record.getPassSlipId())) {
-                            loadData();
-                        }
-                    });
+                    PassSlipMonitoringRecord record = getTableRow().getItem();
+                    if (record != null) {
+                        showConfirmationDialog(record, "Time Out", () -> {
+                            if (repository.markAsOut(record.getPassSlipId())) loadData();
+                        });
+                    }
                 });
 
                 btnIn.setOnAction(event -> {
-                    PassSlipMonitoringRecord record = getTableView().getItems().get(getIndex());
-
-                    // Call the dialog instead of the repository directly
-                    showConfirmationDialog(record, "Time In", () -> {
-                        if (repository.markAsReturned(record.getPassSlipId())) {
-                            loadData();
-                        }
-                    });
+                    PassSlipMonitoringRecord record = getTableRow().getItem();
+                    if (record != null) {
+                        showConfirmationDialog(record, "Time In", () -> {
+                            if (repository.markAsReturned(record.getPassSlipId())) loadData();
+                        });
+                    }
                 });
             }
 
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
+
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
                     setGraphic(null);
                 } else {
-                    PassSlipMonitoringRecord record = getTableView().getItems().get(getIndex());
+                    PassSlipMonitoringRecord record = getTableRow().getItem();
                     String status = record.getStatus();
 
-                    // 🟢 Extract the pass slip type from the reason string safely
-                    String passSlipType = "";
-                    String rawReason = record.getReason();
-                    if (rawReason != null && rawReason.contains("|")) {
-                        String[] parts = rawReason.split("\\|");
-                        for (String part : parts) {
-                            part = part.trim();
-                            if (part.toLowerCase().startsWith("type:")) {
-                                passSlipType = part.substring(5).trim();
-                                break;
-                            }
-                        }
-                    }
-
-                    // 🟢 Check if this is an Official Business, Personal, or Emergency pass slip
-                    boolean isSpecialPass = passSlipType.equalsIgnoreCase("Official Business")
-                            || passSlipType.equalsIgnoreCase("Personal")
-                            || passSlipType.equalsIgnoreCase("Emergency")
-                            || "Official Business".equalsIgnoreCase(status)
-                            || "Personal".equalsIgnoreCase(status)
-                            || "Emergency".equalsIgnoreCase(status);
-
-                    // 🌟 FIX: Added check for "-" so empty times aren't treated as filled
+                    // 🟢 Check if the employee actually has a time in value
                     boolean hasTimeIn = record.getTimeIn() != null
                             && !record.getTimeIn().trim().isEmpty()
-                            && !record.getTimeIn().equalsIgnoreCase("null")
                             && !record.getTimeIn().equalsIgnoreCase("N/A")
                             && !record.getTimeIn().equals("-");
 
-                    if ("Approved".equalsIgnoreCase(status)) {
-                        btnOut.setVisible(true);
-                        btnOut.setManaged(true);
+                    boolean isApproved = "Approved".equalsIgnoreCase(status);
+                    boolean isCurrentlyOut = "Out".equalsIgnoreCase(status) || "Excused".equalsIgnoreCase(status);
 
-                        // Allow "Log Time In" to be visible alongside Log Time Out for special passes
-                        if (isSpecialPass && !hasTimeIn) {
-                            btnIn.setVisible(true);
-                            btnIn.setManaged(true);
-                        } else {
-                            btnIn.setVisible(false);
-                            btnIn.setManaged(false);
-                        }
+                    String rawReason = record.getReasonForLeaving();
+                    if (rawReason == null || rawReason.isBlank()) rawReason = record.getReason();
+                    boolean isEmergency = (rawReason != null && rawReason.toLowerCase().contains("type: emergency"));
+
+                    if (isApproved) {
+                        btnOut.setVisible(true); btnOut.setManaged(true);
+                        btnIn.setVisible(false); btnIn.setManaged(false);
                         setGraphic(pane);
-
-                    } else if ("Out".equalsIgnoreCase(status)
-                            || "Excused".equalsIgnoreCase(status)
-                            || "Official Business".equalsIgnoreCase(status)
-                            || "Personal".equalsIgnoreCase(status)
-                            || "Emergency".equalsIgnoreCase(status)) {
-
-                        btnOut.setVisible(false);
-                        btnOut.setManaged(false);
-
-                        if (!hasTimeIn) {
-                            btnIn.setVisible(true);
-                            btnIn.setManaged(true);
-                            setGraphic(pane);
-                        } else {
-                            btnIn.setVisible(false);
-                            btnIn.setManaged(false);
-                            setGraphic(null);
-                        }
+                    }
+                    // 🌟 FIX: Only show Time In if they are out/emergency AND they haven't been logged in yet
+                    else if ((isCurrentlyOut || isEmergency) && !hasTimeIn) {
+                        btnOut.setVisible(false); btnOut.setManaged(false);
+                        btnIn.setVisible(true); btnIn.setManaged(true);
+                        setGraphic(pane);
                     } else {
                         setGraphic(null);
                     }
                 }
             }
-        }); // 🚨 FIX: Added closing parenthesis and brace for the cell factory
-    } // 🚨 FIX: Added closing brace for setupColumns() method
+        });
+    }
+
+    private void showConfirmationDialog(PassSlipMonitoringRecord record, String actionType, Runnable onConfirm) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Gate Log Confirmation");
+        alert.setHeaderText("Confirm Log " + actionType);
+
+        if (monitoringTable.getScene() != null && monitoringTable.getScene().getWindow() != null) {
+            alert.initOwner(monitoringTable.getScene().getWindow());
+        }
+
+        String passType = "Standard";
+        String destination = "N/A";
+        String nature = "N/A";
+
+        String rawReason = record.getReasonForLeaving();
+        if (rawReason == null || rawReason.isBlank()) rawReason = record.getReason();
+
+        if (rawReason != null && !rawReason.isBlank()) {
+            rawReason = rawReason.replace("\n", " ").replace("\r", " ");
+            if (rawReason.contains("|")) {
+                String[] parts = rawReason.split("\\|");
+                for (String part : parts) {
+                    part = part.trim();
+                    if (part.toLowerCase().startsWith("type:")) passType = part.substring(5).trim();
+                    else if (part.toLowerCase().startsWith("destination:")) destination = part.substring(12).trim();
+                    else if (part.toLowerCase().startsWith("reason:")) nature = part.substring(7).trim();
+                }
+            } else {
+                if (rawReason.toLowerCase().startsWith("destination:")) destination = rawReason.substring(12).trim();
+                else if (rawReason.toLowerCase().startsWith("reason:")) nature = rawReason.substring(7).trim();
+                else if (rawReason.toLowerCase().startsWith("type:")) passType = rawReason.substring(5).trim();
+                else nature = rawReason.trim();
+            }
+        }
+
+        String content = String.format(
+                "Are you sure you want to log %s for the following employee?\n\n" +
+                        "Slip No:\t\t%s\n" +
+                        "Employee ID:\t%s\n" +
+                        "Name:\t\t%s\n" +
+                        "Pass Type:\t%s\n" +
+                        "Destination:\t%s\n" +
+                        "Reason:\t\t%s\n\n" +
+                        "Please verify the employee's identity before confirming.",
+                actionType, record.getSlipNo(), record.getEmployeeId(), record.getName(),
+                passType, destination, nature
+        );
+
+        alert.setContentText(content);
+        ButtonType confirmButton = new ButtonType("Confirm " + actionType, ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(confirmButton, cancelButton);
+
+        alert.showAndWait().ifPresent(response -> { if (response == confirmButton) onConfirm.run(); });
+    }
 
     private void setupFilters() {
         statusFilter.setItems(FXCollections.observableArrayList("All", "Approved", "Out", "Excused", "Returned"));
         statusFilter.setValue("All");
-
         statusFilter.valueProperty().addListener((obs, oldVal, newVal) -> applyFilters());
         searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
     }
 
     private void loadData() {
         List<PassSlipMonitoringRecord> allRecords = repository.findAll();
-
         String todayString = java.time.LocalDate.now().toString();
-
         List<PassSlipMonitoringRecord> guardRecords = allRecords.stream()
                 .filter(r -> r.getDate() != null && r.getDate().toString().equals(todayString))
-                .filter(r -> "Approved".equalsIgnoreCase(r.getStatus()) ||
-                        "Out".equalsIgnoreCase(r.getStatus()) ||
-                        "Excused".equalsIgnoreCase(r.getStatus()) ||
-                        "Returned".equalsIgnoreCase(r.getStatus()))
+                .filter(r -> "Approved".equalsIgnoreCase(r.getStatus()) || "Out".equalsIgnoreCase(r.getStatus()) ||
+                        "Excused".equalsIgnoreCase(r.getStatus()) || "Returned".equalsIgnoreCase(r.getStatus()))
                 .collect(Collectors.toList());
-
         masterData.setAll(guardRecords);
         updateDashboardKPIs(guardRecords);
         applyFilters();
@@ -219,24 +223,18 @@ public class MonitoringGuardController {
 
     private void applyFilters() {
         FilteredList<PassSlipMonitoringRecord> filteredData = new FilteredList<>(masterData, b -> true);
-
         filteredData.setPredicate(record -> {
             String searchFilter = searchField.getText().toLowerCase();
             String statusCombo = statusFilter.getValue();
-
             boolean matchesSearch = record.getName().toLowerCase().contains(searchFilter) ||
                     record.getSlipNo().toLowerCase().contains(searchFilter) ||
                     record.getEmployeeId().toLowerCase().contains(searchFilter);
-
             boolean matchesStatus = statusCombo.equals("All") || record.getStatus().equalsIgnoreCase(statusCombo);
-
             return matchesSearch && matchesStatus;
         });
-
         SortedList<PassSlipMonitoringRecord> sortedData = new SortedList<>(filteredData);
         sortedData.comparatorProperty().bind(monitoringTable.comparatorProperty());
         monitoringTable.setItems(sortedData);
-
         countLabel.setText("Showing " + filteredData.size() + " active gate records");
     }
 
@@ -244,60 +242,8 @@ public class MonitoringGuardController {
         long approvedCount = records.stream().filter(r -> "Approved".equalsIgnoreCase(r.getStatus())).count();
         long outCount = records.stream().filter(r -> "Out".equalsIgnoreCase(r.getStatus()) || "Excused".equalsIgnoreCase(r.getStatus())).count();
         long returnedCount = records.stream().filter(r -> "Returned".equalsIgnoreCase(r.getStatus())).count();
-
         approvedSlipsLabel.setText(String.valueOf(approvedCount));
         currentlyOutLabel.setText(String.valueOf(outCount));
         returnedLabel.setText(String.valueOf(returnedCount));
     }
-    // 🌟 UPDATED METHOD: Now includes Pass Type extraction and display
-    private void showConfirmationDialog(PassSlipMonitoringRecord record, String actionType, Runnable onConfirm) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Gate Log Confirmation");
-        alert.setHeaderText("Confirm Log " + actionType);
-
-        // 🌟 ROBUST PARSING: Strictly find one of the three categories
-        String passSlipType = "";
-        String rawReason = record.getReason();
-
-        if (rawReason != null) {
-            String lower = rawReason.toLowerCase();
-
-            // Check for the three specific types regardless of their position in the string
-            if (lower.contains("personal")) {
-                passSlipType = "Personal";
-            } else if (lower.contains("official business")) {
-                passSlipType = "Official Business";
-            } else if (lower.contains("emergency")) {
-                passSlipType = "Emergency";
-            }
-        }
-
-        // Build the dialog content
-        String content = String.format(
-                "Are you sure you want to log %s for the following employee?\n\n" +
-                        "Slip No:\t\t%s\n" +
-                        "Employee ID:\t%s\n" +
-                        "Name:\t\t%s\n" +
-                        "Pass Type:\t%s\n" +
-                        "Reason:\t\t%s\n\n" +
-                        "Please verify the employee's identity before confirming.",
-                actionType,
-                record.getSlipNo(),
-                record.getEmployeeId(),
-                record.getName(),
-                passSlipType,
-                record.getReason() != null ? record.getReason().replace("\n", " ") : "N/A"
-        );
-        alert.setContentText(content);
-
-        ButtonType confirmButton = new ButtonType("Confirm " + actionType, ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-        alert.getButtonTypes().setAll(confirmButton, cancelButton);
-
-        alert.showAndWait().ifPresent(response -> {
-            if (response == confirmButton) {
-                onConfirm.run();
-            }
-        });
-    }
-    }
+}
