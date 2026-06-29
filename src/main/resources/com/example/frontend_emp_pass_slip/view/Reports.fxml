@@ -31,7 +31,7 @@
         <VBox styleClass="table-panel" spacing="12" style="-fx-padding: 16 18 16 18;">
 
             <HBox alignment="CENTER_LEFT" spacing="10">
-                <Label fx:id="chartTitleLabel" text="DAILY ACTIVITY - THIS WEEK" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+                <Label fx:id="chartTitleLabel" text="WEEK ACTIVITY - THIS WEEK" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
                 <Region HBox.hgrow="ALWAYS" />
                 <Button fx:id="dailyBtn" text="Daily" styleClass="btn-primary" />
                 <Button fx:id="monthlyBtn" text="Monthly" styleClass="btn-secondary" />

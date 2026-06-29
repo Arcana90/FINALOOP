@@ -126,10 +126,33 @@ public class PassSlipIssuanceController {
         addPaddingFocusListener(inHourField);
         addPaddingFocusListener(inMinuteField);
 
+        // MODIFIED: Auto-tab now flows directly from Out Minutes to In Hours
         setupAutoTab(outHourField, outMinuteField);
-        setupAutoTab(outMinuteField, timeOutAmPmComboBox);
+        setupAutoTab(outMinuteField, inHourField);
         setupAutoTab(inHourField, inMinuteField);
-        setupAutoTab(inMinuteField, timeInAmPmComboBox);
+        // Note: We removed the auto-tab from inMinuteField so the cursor stays there when done.
+
+        setupSmartAmPm(outHourField, timeOutAmPmComboBox);
+        setupSmartAmPm(inHourField, timeInAmPmComboBox);
+    }
+
+    private void setupSmartAmPm(TextField hourField, ComboBox<String> amPmBox) {
+        hourField.textProperty().addListener((obs, oldText, newText) -> {
+            if (newText != null && !newText.trim().isEmpty()) {
+                try {
+                    int hour = Integer.parseInt(newText.trim());
+                    // 8, 9, 10, 11 -> AM
+                    if (hour >= 8 && hour <= 11) {
+                        amPmBox.getSelectionModel().select("AM");
+                    }
+                    // 12, 1, 2, 3, 4, 5, 6, 7 -> PM
+                    else if (hour == 12 || (hour >= 1 && hour <= 7)) {
+                        amPmBox.getSelectionModel().select("PM");
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        });
     }
 
     private void setupAutoTab(TextField current, Control next) {
@@ -181,7 +204,6 @@ public class PassSlipIssuanceController {
         String formattedTimeOut = "N/A";
         String formattedTimeIn = "N/A";
 
-        // TIME VALIDATION BLOCK (Bypassed if Emergency)
         if (!isEmergency) {
             if (outHH.isBlank() || outMM.isBlank() || inHH.isBlank() || inMM.isBlank()) {
                 showStatus("Please fill out all time fields completely.", true);
@@ -223,7 +245,6 @@ public class PassSlipIssuanceController {
                 if ("AM".equals(timeInAmPmComboBox.getValue()) && inHourInt == 12) in24Hour = 0;
                 else if ("PM".equals(timeInAmPmComboBox.getValue()) && inHourInt < 12) in24Hour += 12;
 
-                // REAL-TIME COMPARISON
                 LocalTime currentTime = LocalTime.now();
                 LocalTime estimatedOutTime = LocalTime.of(out24Hour, outMinInt);
                 LocalTime estimatedInTime = LocalTime.of(in24Hour, inMinInt);

@@ -39,7 +39,9 @@ public class PassSlipDetailModalController {
         this.activeStage = stage;
 
         String rawReason = record.getReasonForLeaving();
-        String passType = "Standard"; // Default
+        String passType = "Standard";
+        String extractedDestination = "N/A"; // Variable to hold parsed destination
+        String extractedReason = "N/A";      // Variable to hold parsed reason
         this.isEmergencyPass = false;
 
         if (rawReason != null && rawReason.contains("|")) {
@@ -47,8 +49,16 @@ public class PassSlipDetailModalController {
             for (String part : parts) {
                 part = part.trim();
                 if (part.startsWith("Type:")) {
-                    passType = part.replace("Type:", "").trim();
+                    passType = part.substring("Type:".length()).trim();
                     this.isEmergencyPass = passType.equalsIgnoreCase("Emergency");
+                }
+                // 🟢 ADDED: Parse Destination from the rawReason string
+                else if (part.startsWith("Destination:")) {
+                    extractedDestination = part.substring("Destination:".length()).trim();
+                }
+                // 🟢 ADDED: Parse Reason from the rawReason string
+                else if (part.startsWith("Reason:")) {
+                    extractedReason = part.substring("Reason:".length()).trim();
                 }
             }
         }
@@ -62,14 +72,18 @@ public class PassSlipDetailModalController {
         String formattedRequestedTime = AppSettingsManager.getInstance().formatTimeString(record.getTimeRequested());
         modalTimeRequestedLabel.setText("Requested at: " + formattedRequestedTime);
 
-        modalDestinationLabel.setText(record.getDestination());
-        modalReasonLabel.setText(record.getReason());
+        // 🟢 FIXED: Use the extracted values instead of record.getDestination()/getReason()
+        modalDestinationLabel.setText(extractedDestination);
+        modalReasonLabel.setText(extractedReason);
 
         String estOut = AppSettingsManager.getInstance().formatTimeString(record.getExpectedTimeOut());
         String estIn = AppSettingsManager.getInstance().formatTimeString(record.getExpectedTimeIn());
 
         modalEstOutLabel.setText("Est. Out: " + estOut);
         modalEstInLabel.setText("Est. In: " + estIn);
+
+        // ... (rest of the method remains the same)
+
 
         String status = record.getStatus();
         if (status != null && status.equalsIgnoreCase("For Approval")) {
