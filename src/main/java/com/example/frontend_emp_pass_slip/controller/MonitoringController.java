@@ -54,7 +54,9 @@ public class MonitoringController {
 
         monitoringTable.setOnMouseClicked(event -> {
             PassSlipMonitoringRecord selected = monitoringTable.getSelectionModel().getSelectedItem();
-            if (event.getClickCount() == 2 && selected != null && "Out".equalsIgnoreCase(selected.getStatus())) {
+            // 🟢 FIX: Allow double-clicking to manually record a Time-In for both "Out" and "Excused" employees
+            if (event.getClickCount() == 2 && selected != null &&
+                    ("Out".equalsIgnoreCase(selected.getStatus()) || "Excused".equalsIgnoreCase(selected.getStatus()))) {
                 showTimeInDialog(selected);
             }
         });
@@ -152,7 +154,13 @@ public class MonitoringController {
 
     private void updateStatistics() {
         long totalIssuedToday = records.size();
-        long currentlyOutToday = records.stream().filter(r -> "Out".equalsIgnoreCase(r.getStatus())).count();
+
+        // 🟢 UPDATE: Since 'Excused' is now a finalized end-of-shift status,
+        // only active 'Out' slips represent employees currently away from the building.
+        long currentlyOutToday = records.stream()
+                .filter(r -> "Out".equalsIgnoreCase(r.getStatus()))
+                .count();
+
         long returnedToday = records.stream().filter(r -> "Returned".equalsIgnoreCase(r.getStatus())).count();
 
         totalEmployeesLabel.setText(String.valueOf(totalIssuedToday));

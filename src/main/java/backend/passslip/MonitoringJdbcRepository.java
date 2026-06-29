@@ -99,35 +99,54 @@
         }
         public void runShiftValidation() {
             Connection c = null;
-    
+
             // The Smart Time Rule:
             // Triggers IF the slip is from yesterday/older OR IF it's today but past 9:00 PM
             String timeCondition = """
-                (date_issued < CURRENT_DATE OR 
-                (date_issued = CURRENT_DATE AND (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time >= '21:00:00'))
-                """;
-    
+            (date_issued < CURRENT_DATE OR 
+            (date_issued = CURRENT_DATE AND (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time >= '21:00:00'))
+            """;
+
             // Rule 1: "For Approval" should be cancelled after working hours
             String cancelPending = "UPDATE pass_slips SET status = 'Cancelled'::slip_status WHERE status = 'For Approval' AND " + timeCondition;
-    
+
             // Rule 2: "Approved" (but they never actually left/no time_out) should be cancelled
             String cancelUnused = "UPDATE pass_slips SET status = 'Cancelled'::slip_status WHERE status = 'Approved' AND time_out IS NULL AND " + timeCondition;
-    
-            // Rule 3: "Out" without time_in should be marked as AWOL after working hours
-            String markAwol = "UPDATE pass_slips SET status = 'AWOL'::slip_status WHERE status = 'Out' AND time_in IS NULL AND " + timeCondition;
-    
+
+            // 🟢 Rule 3: Regular passes left as 'Out' become AWOL after working hours
+            String markAwol = """
+            UPDATE pass_slips 
+            SET status = 'AWOL'::slip_status 
+            WHERE status = 'Out' 
+              AND time_in IS NULL 
+              AND reason_for_leaving NOT LIKE 'Type: Emergency%' 
+              AND 
+            """ + timeCondition;
+
+            // 🟢 Rule 4: Emergency passes left as 'Out' remain/become 'Excused' after working hours
+            String markExcused = """
+            UPDATE pass_slips 
+            SET status = 'Excused'::slip_status 
+            WHERE status = 'Out' 
+              AND time_in IS NULL 
+              AND reason_for_leaving LIKE 'Type: Emergency%' 
+              AND 
+            """ + timeCondition;
+
             try {
                 c = ConnectionPoolManager.getInstance().acquire();
                 c.setAutoCommit(false);
-    
+
                 try (PreparedStatement ps1 = c.prepareStatement(cancelPending);
                      PreparedStatement ps2 = c.prepareStatement(cancelUnused);
-                     PreparedStatement ps3 = c.prepareStatement(markAwol)) {
-    
+                     PreparedStatement ps3 = c.prepareStatement(markAwol);
+                     PreparedStatement ps4 = c.prepareStatement(markExcused)) { // Added ps4
+
                     ps1.executeUpdate();
                     ps2.executeUpdate();
                     ps3.executeUpdate();
-    
+                    ps4.executeUpdate(); // Executes the automated closing rule for Emergency passes
+
                     c.commit();
                 } catch (SQLException e) {
                     c.rollback();

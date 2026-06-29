@@ -5,10 +5,15 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ReportsJdbcRepository {
+
+    // ==========================================
+    // ORIGINAL METHODS (For UI Charts & Monthly/Quarterly Reports)
+    // ==========================================
 
     public List<DailyActivitySummary> findWeeklyDailyActivity() {
         List<DailyActivitySummary> list = new ArrayList<>();
@@ -34,7 +39,7 @@ public class ReportsJdbcRepository {
                             rs.getString("day_name"),
                             rs.getInt("official_count"),
                             rs.getInt("personal_count"),
-                            rs.getInt("emergency_count") // Ensure this 4th argument is here
+                            rs.getInt("emergency_count")
                     ));
                 }
             }
@@ -92,12 +97,12 @@ public class ReportsJdbcRepository {
                    COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Personal%' THEN 1 END) AS personal_count,
                    COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Official%' THEN 1 END) AS official_count,
                    COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Emergency%' THEN 1 END) AS emergency_count,
-                   COUNT(CASE WHEN ps.status::text ILIKE 'Approved' THEN 1 END) AS approved_count,
+                   COUNT(CASE WHEN ps.status::text ILIKE 'Approved' OR ps.time_out IS NOT NULL THEN 1 END) AS approved_count,
                    COUNT(CASE WHEN ps.status::text ILIKE 'Cancel%' THEN 1 END) AS canceled_count,
                    COUNT(CASE WHEN ps.status::text ILIKE 'Rejected' THEN 1 END) AS rejected_count,
                    COUNT(CASE WHEN ps.reason_for_leaving NOT ILIKE '%Emergency%'
                                AND ps.time_in IS NULL 
-                               AND ps.status::text ILIKE 'Approved' 
+                               AND (ps.status::text ILIKE 'Approved' OR ps.time_out IS NOT NULL)
                                AND (ps.date_issued < CURRENT_DATE OR (ps.date_issued = CURRENT_DATE AND LOCALTIME > ps.expected_time_in)) THEN 1 END) AS awol_count
             FROM employees e
             LEFT JOIN pass_slips ps ON e.employee_id = ps.employee_id
@@ -135,7 +140,6 @@ public class ReportsJdbcRepository {
 
     public List<EmployeePassSlipDetail> getEmployeePassSlipDetails(String employeeId) {
         List<EmployeePassSlipDetail> list = new ArrayList<>();
-
         String sql = """
             SELECT ps.date_issued::text AS date_issued,
                    e.employee_id, 
@@ -152,7 +156,6 @@ public class ReportsJdbcRepository {
 
         ConnectionPoolManager pool = ConnectionPoolManager.getInstance();
         Connection conn = null;
-
         try {
             conn = pool.acquire();
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -195,6 +198,185 @@ public class ReportsJdbcRepository {
                                 rs.getString("time_out"),
                                 rs.getString("time_in"),
                                 rs.getString("status")
+                        ));
+                    }
+                }
+            }
+        } catch (InterruptedException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            if (conn != null) pool.release(conn);
+        }
+        return list;
+    }
+
+    // ==========================================
+    // FILTERED METHODS (For Accurate Weekly PDF Exports)
+    // ==========================================
+
+    public List<DailyActivitySummary> findWeeklyDailyActivity(LocalDate startDate, LocalDate endDate) {
+        List<DailyActivitySummary> list = new ArrayList<>();
+        String sql = """
+            SELECT TRIM(TO_CHAR(date_issued, 'Dy')) AS day_name,
+                   COUNT(CASE WHEN reason_for_leaving ILIKE '%Official%' THEN 1 END) AS official_count,
+                   COUNT(CASE WHEN reason_for_leaving ILIKE '%Personal%' THEN 1 END) AS personal_count,
+                   COUNT(CASE WHEN reason_for_leaving ILIKE '%Emergency%' THEN 1 END) AS emergency_count
+            FROM pass_slips
+            WHERE date_issued >= ? AND date_issued <= ?
+            GROUP BY TO_CHAR(date_issued, 'Dy'), EXTRACT(DOW FROM date_issued)
+            ORDER BY EXTRACT(DOW FROM date_issued);
+            """;
+
+        ConnectionPoolManager pool = ConnectionPoolManager.getInstance();
+        Connection conn = null;
+        try {
+            conn = pool.acquire();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setDate(1, java.sql.Date.valueOf(startDate));
+                ps.setDate(2, java.sql.Date.valueOf(endDate));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        list.add(new DailyActivitySummary(
+                                rs.getString("day_name"),
+                                rs.getInt("official_count"),
+                                rs.getInt("personal_count"),
+                                rs.getInt("emergency_count")
+                        ));
+                    }
+                }
+            }
+        } catch (InterruptedException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            if (conn != null) pool.release(conn);
+        }
+        return list;
+    }
+
+    public List<ReportEmployeeSummary> getEmployeeSummariesForWeek(LocalDate startDate, LocalDate endDate) {
+        List<ReportEmployeeSummary> list = new ArrayList<>();
+        String sql = """
+            SELECT e.employee_id, 
+                   CONCAT(e.first_name, ' ', e.last_name) AS name,
+                   COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Personal%' THEN 1 END) AS personal_count,
+                   COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Official%' THEN 1 END) AS official_count,
+                   COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Emergency%' THEN 1 END) AS emergency_count,
+                   COUNT(CASE WHEN ps.status::text ILIKE 'Approved' OR ps.time_out IS NOT NULL THEN 1 END) AS approved_count,
+                   COUNT(CASE WHEN ps.status::text ILIKE 'Cancel%' THEN 1 END) AS canceled_count,
+                   COUNT(CASE WHEN ps.status::text ILIKE 'Rejected' THEN 1 END) AS rejected_count,
+                   COUNT(CASE WHEN ps.status::text ILIKE 'AWOL' THEN 1 END) AS awol_count
+            FROM employees e
+            INNER JOIN pass_slips ps ON e.employee_id = ps.employee_id
+            WHERE ps.date_issued >= ? AND ps.date_issued <= ?
+            GROUP BY e.employee_id, e.first_name, e.last_name
+            ORDER BY e.employee_id;
+            """;
+
+        ConnectionPoolManager pool = ConnectionPoolManager.getInstance();
+        Connection conn = null;
+        try {
+            conn = pool.acquire();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setDate(1, java.sql.Date.valueOf(startDate));
+                ps.setDate(2, java.sql.Date.valueOf(endDate));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        list.add(new ReportEmployeeSummary(
+                                rs.getString("employee_id"),
+                                rs.getString("name"),
+                                rs.getInt("personal_count"),
+                                rs.getInt("official_count"),
+                                rs.getInt("emergency_count"),
+                                rs.getInt("approved_count"),
+                                rs.getInt("canceled_count"),
+                                rs.getInt("rejected_count"),
+                                rs.getInt("awol_count")
+                        ));
+                    }
+                }
+            }
+        } catch (InterruptedException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            if (conn != null) pool.release(conn);
+        }
+        return list;
+    }
+
+    public List<WeeklyAwolRecord> getWeeklyAwolRecords(LocalDate startDate, LocalDate endDate) {
+        List<WeeklyAwolRecord> list = new ArrayList<>();
+        String sql = """
+            SELECT e.employee_id, 
+                   CONCAT(e.first_name, ' ', e.last_name) AS name, 
+                   e.department, 
+                   ps.date_issued::text AS date_issued
+            FROM pass_slips ps
+            JOIN employees e ON ps.employee_id = e.employee_id
+            WHERE ps.status::text ILIKE 'AWOL' AND ps.date_issued >= ? AND ps.date_issued <= ?
+            ORDER BY ps.date_issued DESC;
+            """;
+
+        ConnectionPoolManager pool = ConnectionPoolManager.getInstance();
+        Connection conn = null;
+        try {
+            conn = pool.acquire();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setDate(1, java.sql.Date.valueOf(startDate));
+                ps.setDate(2, java.sql.Date.valueOf(endDate));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        list.add(new WeeklyAwolRecord(
+                                rs.getString("employee_id"),
+                                rs.getString("name"),
+                                rs.getMetaData().getColumnCount() >= 3 ? rs.getString("department") : "Operations",
+                                rs.getString("date_issued")
+                        ));
+                    }
+                }
+            }
+        } catch (InterruptedException | SQLException e) {
+            e.printStackTrace();
+        } finally {
+            if (conn != null) pool.release(conn);
+        }
+        return list;
+    }
+
+    public List<WeeklySlipDetailRecord> getWeeklySlipDetails(LocalDate startDate, LocalDate endDate) {
+        List<WeeklySlipDetailRecord> list = new ArrayList<>();
+        // 🟢 FIX: Used ps.date_issued::text AS slip_id to prevent "column ps.slip_id does not exist" error
+        String sql = """
+            SELECT ps.date_issued::text AS slip_id, 
+                   CONCAT(e.first_name, ' ', e.last_name) AS name, 
+                   ps.reason_for_leaving, 
+                   ps.status, 
+                   ps.date_issued::text AS date_issued
+            FROM pass_slips ps
+            JOIN employees e ON ps.employee_id = e.employee_id
+            WHERE ps.date_issued >= ? AND ps.date_issued <= ?
+            ORDER BY ps.date_issued DESC;
+            """;
+
+        ConnectionPoolManager pool = ConnectionPoolManager.getInstance();
+        Connection conn = null;
+        try {
+            conn = pool.acquire();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setDate(1, java.sql.Date.valueOf(startDate));
+                ps.setDate(2, java.sql.Date.valueOf(endDate));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String rawReason = rs.getString("reason_for_leaving");
+                        String leaveType = "Personal";
+                        if (rawReason != null && rawReason.toLowerCase().contains("official")) leaveType = "Official";
+                        if (rawReason != null && rawReason.toLowerCase().contains("emergency")) leaveType = "Emergency";
+
+                        list.add(new WeeklySlipDetailRecord(
+                                rs.getString("slip_id"),
+                                rs.getString("name"),
+                                leaveType,
+                                rs.getString("status"),
+                                rs.getString("date_issued")
                         ));
                     }
                 }
