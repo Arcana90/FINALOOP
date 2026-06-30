@@ -36,7 +36,8 @@ public class MonthlyReportExporter {
 
         // --- 1. SUMMARY STATISTICS ---
         int totalSlips = slipDetails.size();
-        int official = 0, personal = 0, emergency = 0, approved = 0;
+        // 🟢 ADDED DECLARATION HERE
+        int official = 0, personal = 0, emergency = 0, approved = 0, rejected = 0;
 
         for (WeeklySlipDetailRecord slip : slipDetails) {
             String type = slip.getLeaveType().toLowerCase();
@@ -44,8 +45,16 @@ public class MonthlyReportExporter {
             else if (type.contains("emergency")) emergency++;
             else personal++;
 
-            if (slip.getStatus() != null && (slip.getStatus().toLowerCase().contains("approved") || slip.getStatus().toLowerCase().contains("returned"))) {
-                approved++;
+            if (slip.getStatus() != null) {
+                String status = slip.getStatus().toLowerCase();
+                // Count approved/returned/etc
+                if (status.contains("approved") || status.contains("returned") || status.contains("excused") || status.contains("out")) {
+                    approved++;
+                }
+                // 🟢 FIXED: Only count 'reject', ignore 'cancel'
+                else if (status.contains("reject")) {
+                    rejected++;
+                }
             }
         }
 
@@ -57,6 +66,7 @@ public class MonthlyReportExporter {
         document.add(new Paragraph("Personal Pass Slip: " + personal));
         document.add(new Paragraph("Emergency Pass Slip: " + emergency));
         document.add(new Paragraph("Approved Slips: " + approved));
+        document.add(new Paragraph("Rejected Slips: " + rejected)); // Now works!
         document.add(new Paragraph(String.format("Approval Rate: %.2f%%", approvalRate)));
         document.add(new Paragraph("Total AWOL Instances: " + awolRecords.size() + "\n\n"));
 
@@ -120,14 +130,21 @@ public class MonthlyReportExporter {
             writer.println();
 
             int totalSlips = slipDetails.size();
-            int official = 0, personal = 0, emergency = 0, approved = 0;
+            int official = 0, personal = 0, emergency = 0, approved = 0, rejected = 0; // Added rejected
+
             for (WeeklySlipDetailRecord slip : slipDetails) {
                 String type = slip.getLeaveType().toLowerCase();
                 if (type.contains("official")) official++;
                 else if (type.contains("emergency")) emergency++;
                 else personal++;
-                if (slip.getStatus() != null && (slip.getStatus().toLowerCase().contains("approved") || slip.getStatus().toLowerCase().contains("returned"))) {
-                    approved++;
+
+                if (slip.getStatus() != null) {
+                    String stat = slip.getStatus().toLowerCase();
+                    if (stat.contains("approved") || stat.contains("returned")) {
+                        approved++;
+                    } else if (stat.contains("reject")) {
+                        rejected++; // Count rejected slips
+                    }
                 }
             }
             double approvalRate = (totalSlips == 0) ? 0 : ((double) approved / totalSlips) * 100;
@@ -138,6 +155,7 @@ public class MonthlyReportExporter {
             writer.println("Personal Leaves," + personal);
             writer.println("Emergency Leaves," + emergency);
             writer.println("Approved Slips," + approved);
+            writer.println("Rejected Slips," + rejected); // Added this line
             writer.println(String.format("Approval Rate (%%),%.2f", approvalRate));
             writer.println("Total AWOL Instances," + awolRecords.size());
             writer.println();

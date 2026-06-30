@@ -354,6 +354,29 @@
                             reportsRepository.getWeeklySlipDetails(startDate, endDate)         // Reusing date-range query!
                     );
                     new Alert(Alert.AlertType.INFORMATION, monthName + " PDF Report generated!").showAndWait();
+                } else if (currentView.equals("QUARTERLY") && viewDetailOption != null && !viewDetailOption.equals("All Quarters Summary")) {
+
+                    int startMonth = 1;
+                    int endMonth = 3;
+
+                    if (viewDetailOption.startsWith("Q2")) { startMonth = 4; endMonth = 6; }
+                    else if (viewDetailOption.startsWith("Q3")) { startMonth = 7; endMonth = 9; }
+                    else if (viewDetailOption.startsWith("Q4")) { startMonth = 10; endMonth = 12; }
+
+                    int currentYear = java.time.LocalDate.now().getYear();
+                    java.time.LocalDate startDate = java.time.LocalDate.of(currentYear, startMonth, 1);
+                    java.time.LocalDate endDate = java.time.LocalDate.of(currentYear, endMonth,
+                            java.time.LocalDate.of(currentYear, endMonth, 1).lengthOfMonth());
+
+                    // 🟢 PDF EXPORT CALL
+                    com.example.frontend_emp_pass_slip.service.QuarterlyReportExporter.exportToPdf(
+                            file, viewDetailOption, startMonth,
+                            reportsRepository.getEmployeeSummariesForWeek(startDate, endDate),
+                            reportsRepository.getWeeklyAwolRecords(startDate, endDate),
+                            reportsRepository.getWeeklySlipDetails(startDate, endDate)
+                    );
+
+                    new Alert(Alert.AlertType.INFORMATION, viewDetailOption + " PDF Report generated!").showAndWait();
                 }
             } catch (java.io.FileNotFoundException e) {
                 new Alert(Alert.AlertType.ERROR, "File is currently open in another program. Please close it and try again.").showAndWait();
@@ -397,7 +420,31 @@
                             reportsRepository.getWeeklySlipDetails(startDate, endDate)
                     );
                     new Alert(Alert.AlertType.INFORMATION, monthName + " CSV Report generated!").showAndWait();
+                } else if (currentView.equals("QUARTERLY") && viewDetailOption != null && !viewDetailOption.equals("All Quarters Summary")) {
+
+                    int startMonth = 1;
+                    int endMonth = 3;
+
+                    if (viewDetailOption.startsWith("Q2")) { startMonth = 4; endMonth = 6; }
+                    else if (viewDetailOption.startsWith("Q3")) { startMonth = 7; endMonth = 9; }
+                    else if (viewDetailOption.startsWith("Q4")) { startMonth = 10; endMonth = 12; }
+
+                    int currentYear = java.time.LocalDate.now().getYear();
+                    java.time.LocalDate startDate = java.time.LocalDate.of(currentYear, startMonth, 1);
+                    java.time.LocalDate endDate = java.time.LocalDate.of(currentYear, endMonth,
+                            java.time.LocalDate.of(currentYear, endMonth, 1).lengthOfMonth());
+
+                    // 🟢 CSV EXPORT CALL
+                    com.example.frontend_emp_pass_slip.service.QuarterlyReportExporter.exportToCsv(
+                            file, viewDetailOption, startMonth,
+                            reportsRepository.getEmployeeSummariesForWeek(startDate, endDate),
+                            reportsRepository.getWeeklyAwolRecords(startDate, endDate),
+                            reportsRepository.getWeeklySlipDetails(startDate, endDate)
+                    );
+
+                    new Alert(Alert.AlertType.INFORMATION, viewDetailOption + " CSV Report generated!").showAndWait();
                 }
+
             } catch (java.io.FileNotFoundException e) {
                 new Alert(Alert.AlertType.ERROR, "File is currently open in another program. Please close it and try again.").showAndWait();
             } catch (Exception e) {
