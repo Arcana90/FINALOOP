@@ -256,21 +256,24 @@ public class ReportsJdbcRepository {
     public List<ReportEmployeeSummary> getEmployeeSummariesForWeek(LocalDate startDate, LocalDate endDate) {
         List<ReportEmployeeSummary> list = new ArrayList<>();
         String sql = """
-            SELECT e.employee_id, 
-                   CONCAT(e.first_name, ' ', e.last_name) AS name,
-                   COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Personal%' THEN 1 END) AS personal_count,
-                   COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Official%' THEN 1 END) AS official_count,
-                   COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Emergency%' THEN 1 END) AS emergency_count,
-                   COUNT(CASE WHEN ps.status::text ILIKE 'Approved' OR ps.time_out IS NOT NULL THEN 1 END) AS approved_count,
-                   COUNT(CASE WHEN ps.status::text ILIKE 'Cancel%' THEN 1 END) AS canceled_count,
-                   COUNT(CASE WHEN ps.status::text ILIKE 'Rejected' THEN 1 END) AS rejected_count,
-                   COUNT(CASE WHEN ps.status::text ILIKE 'AWOL' THEN 1 END) AS awol_count
-            FROM employees e
-            INNER JOIN pass_slips ps ON e.employee_id = ps.employee_id
-            WHERE ps.date_issued >= ? AND ps.date_issued <= ?
-            GROUP BY e.employee_id, e.first_name, e.last_name
-            ORDER BY e.employee_id;
-            """;
+        SELECT e.employee_id, 
+               CONCAT(e.first_name, ' ', e.last_name) AS name,
+               COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Personal%' THEN 1 END) AS personal_count,
+               COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Official%' THEN 1 END) AS official_count,
+               COUNT(CASE WHEN ps.reason_for_leaving ILIKE '%Emergency%' THEN 1 END) AS emergency_count,
+               -- 🟢 UPDATED: Included 'Returned' status as approved
+               COUNT(CASE WHEN ps.status::text ILIKE 'Approved' 
+                          OR ps.status::text ILIKE 'Returned' 
+                          OR ps.time_out IS NOT NULL THEN 1 END) AS approved_count,
+               COUNT(CASE WHEN ps.status::text ILIKE 'Cancel%' THEN 1 END) AS canceled_count,
+               COUNT(CASE WHEN ps.status::text ILIKE 'Rejected' THEN 1 END) AS rejected_count,
+               COUNT(CASE WHEN ps.status::text ILIKE 'AWOL' THEN 1 END) AS awol_count
+        FROM employees e
+        INNER JOIN pass_slips ps ON e.employee_id = ps.employee_id
+        WHERE ps.date_issued >= ? AND ps.date_issued <= ?
+        GROUP BY e.employee_id, e.first_name, e.last_name
+        ORDER BY e.employee_id;
+        """;
 
         ConnectionPoolManager pool = ConnectionPoolManager.getInstance();
         Connection conn = null;
@@ -344,12 +347,17 @@ public class ReportsJdbcRepository {
 
     public List<WeeklySlipDetailRecord> getWeeklySlipDetails(LocalDate startDate, LocalDate endDate) {
         List<WeeklySlipDetailRecord> list = new ArrayList<>();
-        // 🟢 FIX: Used ps.date_issued::text AS slip_id to prevent "column ps.slip_id does not exist" error
+        // 🟢 UPDATED SQL: Added a CASE statement to check for time_out
         String sql = """
             SELECT ps.date_issued::text AS slip_id, 
                    CONCAT(e.first_name, ' ', e.last_name) AS name, 
                    ps.reason_for_leaving, 
-                   ps.status, 
+                   CASE 
+                       WHEN ps.time_out IS NOT NULL
+                       OR ps.status::text ILIKE 'Approved'
+                       OR ps.status::text ILIKE 'Returned' THEN 'Approved'
+                       ELSE ps.status::text 
+                   END AS status, 
                    ps.date_issued::text AS date_issued
             FROM pass_slips ps
             JOIN employees e ON ps.employee_id = e.employee_id
@@ -375,7 +383,7 @@ public class ReportsJdbcRepository {
                                 rs.getString("slip_id"),
                                 rs.getString("name"),
                                 leaveType,
-                                rs.getString("status"),
+                                rs.getString("status"), // This will now accurately say 'Approved' if time_out exists
                                 rs.getString("date_issued")
                         ));
                     }

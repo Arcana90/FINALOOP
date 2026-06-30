@@ -7,7 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class PassSlipJdbcRepository {
+public class    PassSlipJdbcRepository {
 
     public IssuePassSlipResult issuePassSlip(String employeeId, String reason, int issuedByUserId, String expectedTimeOut, String expectedTimeIn) {
         Connection connection = null;
