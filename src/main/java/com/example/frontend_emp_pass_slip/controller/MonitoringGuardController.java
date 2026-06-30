@@ -115,30 +115,30 @@ public class MonitoringGuardController {
                     PassSlipMonitoringRecord record = getTableRow().getItem();
                     String status = record.getStatus();
 
-                    // 🟢 Check if the employee actually has a time in value
+                    // Check if the employee actually has a time in value
                     boolean hasTimeIn = record.getTimeIn() != null
                             && !record.getTimeIn().trim().isEmpty()
                             && !record.getTimeIn().equalsIgnoreCase("N/A")
                             && !record.getTimeIn().equals("-");
 
                     boolean isApproved = "Approved".equalsIgnoreCase(status);
-                    boolean isCurrentlyOut = "Out".equalsIgnoreCase(status) || "Excused".equalsIgnoreCase(status);
 
-                    String rawReason = record.getReasonForLeaving();
-                    if (rawReason == null || rawReason.isBlank()) rawReason = record.getReason();
-                    boolean isEmergency = (rawReason != null && rawReason.toLowerCase().contains("type: emergency"));
+                    // 🟢 FIX: Strictly require the status to be 'Out' for the time-in button to show.
+                    // 'Excused' is a closed status and no longer requires manual guard intervention.
+                    boolean isOut = "Out".equalsIgnoreCase(status);
 
                     if (isApproved) {
                         btnOut.setVisible(true); btnOut.setManaged(true);
                         btnIn.setVisible(false); btnIn.setManaged(false);
                         setGraphic(pane);
                     }
-                    // 🌟 FIX: Only show Time In if they are out/emergency AND they haven't been logged in yet
-                    else if ((isCurrentlyOut || isEmergency) && !hasTimeIn) {
+                    // 🟢 FIX: Only show Time In if they are strictly 'Out' and haven't been logged in yet
+                    else if (isOut && !hasTimeIn) {
                         btnOut.setVisible(false); btnOut.setManaged(false);
                         btnIn.setVisible(true); btnIn.setManaged(true);
                         setGraphic(pane);
                     } else {
+                        // For Returned, Cancelled, AWOL, and Excused, show nothing
                         setGraphic(null);
                     }
                 }
@@ -240,8 +240,12 @@ public class MonitoringGuardController {
 
     private void updateDashboardKPIs(List<PassSlipMonitoringRecord> records) {
         long approvedCount = records.stream().filter(r -> "Approved".equalsIgnoreCase(r.getStatus())).count();
-        long outCount = records.stream().filter(r -> "Out".equalsIgnoreCase(r.getStatus()) || "Excused".equalsIgnoreCase(r.getStatus())).count();
+
+        // 🟢 FIX: Only count active 'Out' statuses, completely ignoring 'Excused'
+        long outCount = records.stream().filter(r -> "Out".equalsIgnoreCase(r.getStatus())).count();
+
         long returnedCount = records.stream().filter(r -> "Returned".equalsIgnoreCase(r.getStatus())).count();
+
         approvedSlipsLabel.setText(String.valueOf(approvedCount));
         currentlyOutLabel.setText(String.valueOf(outCount));
         returnedLabel.setText(String.valueOf(returnedCount));

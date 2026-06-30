@@ -133,8 +133,89 @@ public class QuarterlyReportExporter {
                                    List<ReportEmployeeSummary> employeeSummaries,
                                    List<WeeklyAwolRecord> awolRecords,
                                    List<WeeklySlipDetailRecord> slipDetails) throws Exception {
-        // You can copy the structure from MonthlyReportExporter.exportToCsv and adapt the headers!
-        // (Omitted here for brevity, but the logic exactly matches the PDF generation above).
+
+        try (PrintWriter writer = new PrintWriter(file)) {
+            writer.println("QUARTERLY PASS SLIP OPERATIONAL REPORT: " + quarterName.toUpperCase());
+            writer.println("Generated on," + LocalDate.now());
+            writer.println();
+
+            // --- 1. SUMMARY STATISTICS ---
+            int totalSlips = slipDetails.size();
+            int official = 0, personal = 0, emergency = 0, approved = 0, rejected = 0;
+
+            for (WeeklySlipDetailRecord slip : slipDetails) {
+                String type = slip.getLeaveType().toLowerCase();
+                if (type.contains("official")) official++;
+                else if (type.contains("emergency")) emergency++;
+                else personal++;
+
+                if (slip.getStatus() != null) {
+                    String status = slip.getStatus().toLowerCase();
+                    if (status.contains("approved") || status.contains("returned") || status.contains("excused") || status.contains("out")) {
+                        approved++;
+                    } else if (status.contains("reject")){
+                        rejected++;
+                    }
+                }
+            }
+
+            double approvalRate = (totalSlips == 0) ? 0 : ((double) approved / totalSlips) * 100;
+
+            writer.println("SUMMARY STATISTICS");
+            writer.println("Total Number of Slips," + totalSlips);
+            writer.println("Official Pass Slips," + official);
+            writer.println("Personal Pass Slips," + personal);
+            writer.println("Emergency Pass Slips," + emergency);
+            writer.println("Approved Slips," + approved);
+            writer.println("Rejected Slips," + rejected);
+            writer.println(String.format("Approval Rate (%%),%.2f", approvalRate));
+            writer.println("Total AWOL Instances," + awolRecords.size());
+            writer.println();
+
+            // --- 2. MONTHLY BREAKDOWN ---
+            writer.println("MONTHLY BREAKDOWN");
+            writer.println("Month,Total Slips,Approved,Rejected,AWOL");
+            List<MonthlyBreakdownRecord> monthlyData = calculateMonthlyBreakdown(slipDetails, awolRecords, startMonth);
+            for (MonthlyBreakdownRecord m : monthlyData) {
+                writer.println(m.getMonthName() + "," + m.getTotalSlips() + "," + m.getApproved() + "," + m.getRejected() + "," + m.getAwol());
+            }
+            writer.println();
+
+            // --- 3. QUARTERLY HIGHLIGHTS ---
+            writer.println("QUARTERLY HIGHLIGHTS");
+            MonthlyBreakdownRecord maxApproved = monthlyData.stream().max(Comparator.comparingInt(MonthlyBreakdownRecord::getApproved)).orElse(null);
+            MonthlyBreakdownRecord minApproved = monthlyData.stream().min(Comparator.comparingInt(MonthlyBreakdownRecord::getApproved)).orElse(null);
+            MonthlyBreakdownRecord maxAwol = monthlyData.stream().max(Comparator.comparingInt(MonthlyBreakdownRecord::getAwol)).orElse(null);
+            MonthlyBreakdownRecord minAwol = monthlyData.stream().min(Comparator.comparingInt(MonthlyBreakdownRecord::getAwol)).orElse(null);
+            MonthlyBreakdownRecord maxTimeOuts = monthlyData.stream().max(Comparator.comparingInt(MonthlyBreakdownRecord::getTimeOuts)).orElse(null);
+            MonthlyBreakdownRecord minTimeOuts = monthlyData.stream().min(Comparator.comparingInt(MonthlyBreakdownRecord::getTimeOuts)).orElse(null);
+            MonthlyBreakdownRecord maxRate = monthlyData.stream().max(Comparator.comparingDouble(MonthlyBreakdownRecord::getApprovalRate)).orElse(null);
+            MonthlyBreakdownRecord minRate = monthlyData.stream().min(Comparator.comparingDouble(MonthlyBreakdownRecord::getApprovalRate)).orElse(null);
+
+            writer.println("Month with the most approved slips," + (maxApproved != null ? maxApproved.getMonthName() : "N/A"));
+            writer.println("Month with the least approved slips," + (minApproved != null ? minApproved.getMonthName() : "N/A"));
+            writer.println("Month with the most AWOL," + (maxAwol != null ? maxAwol.getMonthName() : "N/A"));
+            writer.println("Month with the least AWOL," + (minAwol != null ? minAwol.getMonthName() : "N/A"));
+            writer.println("Month with the most time-outs," + (maxTimeOuts != null ? maxTimeOuts.getMonthName() : "N/A"));
+            writer.println("Month with the least time-outs," + (minTimeOuts != null ? minTimeOuts.getMonthName() : "N/A"));
+            writer.println(String.format("Highest approval rate,%s (%.2f%%)", maxRate != null ? maxRate.getMonthName() : "N/A", maxRate != null ? maxRate.getApprovalRate() : 0));
+            writer.println(String.format("Lowest approval rate,%s (%.2f%%)", minRate != null ? minRate.getMonthName() : "N/A", minRate != null ? minRate.getApprovalRate() : 0));
+            writer.println();
+
+            // --- 4. EMPLOYEE SUMMARY ---
+            writer.println("EMPLOYEE SUMMARY");
+            ReportEmployeeSummary mostSlips = employeeSummaries.stream().max(Comparator.comparingInt(ReportEmployeeSummary::getTotalCount)).orElse(null);
+            ReportEmployeeSummary mostOfficial = employeeSummaries.stream().max(Comparator.comparingInt(ReportEmployeeSummary::getOfficialCount)).orElse(null);
+            ReportEmployeeSummary mostPersonal = employeeSummaries.stream().max(Comparator.comparingInt(ReportEmployeeSummary::getPersonalCount)).orElse(null);
+            ReportEmployeeSummary mostEmergency = employeeSummaries.stream().max(Comparator.comparingInt(ReportEmployeeSummary::getEmergencyCount)).orElse(null);
+            ReportEmployeeSummary mostAwolEmp = employeeSummaries.stream().max(Comparator.comparingInt(ReportEmployeeSummary::getAwolCount)).orElse(null);
+
+            writer.println("Employee with the most leave slips," + (mostSlips != null && mostSlips.getTotalCount() > 0 ? mostSlips.getEmployeeName() + " (" + mostSlips.getTotalCount() + ")" : "N/A"));
+            writer.println("Employee with the most official slips," + (mostOfficial != null && mostOfficial.getOfficialCount() > 0 ? mostOfficial.getEmployeeName() + " (" + mostOfficial.getOfficialCount() + ")" : "N/A"));
+            writer.println("Employee with the most personal slips," + (mostPersonal != null && mostPersonal.getPersonalCount() > 0 ? mostPersonal.getEmployeeName() + " (" + mostPersonal.getPersonalCount() + ")" : "N/A"));
+            writer.println("Employee with the most emergency slips," + (mostEmergency != null && mostEmergency.getEmergencyCount() > 0 ? mostEmergency.getEmployeeName() + " (" + mostEmergency.getEmergencyCount() + ")" : "N/A"));
+            writer.println("Employee with the most AWOL cases," + (mostAwolEmp != null && mostAwolEmp.getAwolCount() > 0 ? mostAwolEmp.getEmployeeName() + " (" + mostAwolEmp.getAwolCount() + ")" : "N/A"));
+        }
     }
 
     private static List<MonthlyBreakdownRecord> calculateMonthlyBreakdown(List<WeeklySlipDetailRecord> slips, List<WeeklyAwolRecord> awols, int startMonth) {
@@ -153,9 +234,10 @@ public class QuarterlyReportExporter {
                     String status = slip.getStatus().toLowerCase();
                     if (status.contains("approved") || status.contains("returned") || status.contains("excused") || status.contains("out")) {
                         appr[monthIdx]++;
-                        timeOuts[monthIdx]++; // Since approval implies time out based on your rules
+                        timeOuts[monthIdx]++;
                     }
-                    if (status.contains("reject") || status.contains("cancel")) {
+                    // 🟢 FIXED: Removed the || status.contains("cancel") so it matches the Summary table perfectly
+                    if (status.contains("reject")) {
                         rej[monthIdx]++;
                     }
                 }

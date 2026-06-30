@@ -16,13 +16,13 @@ public class DashboardJdbcRepository {
         try {
             connection = ConnectionPoolManager.getInstance().acquire();
 
-            // FIXED: Added WHERE clause to filter out Inactive or Archived staff
             int totalEmployees = count(connection, """
                     SELECT COUNT(*)
                     FROM employees
                     WHERE status = 'Active'
                     """);
 
+            // 🟢 CORRECTED: Strictly look for active 'Out' status
             int activePassSlips = count(connection, """
                     SELECT COUNT(*)
                     FROM pass_slips
@@ -61,6 +61,7 @@ public class DashboardJdbcRepository {
                       AND status = 'Returned'
                     """);
 
+            // 🟢 CORRECTED: Strictly look for active 'Out' status for today's snapshot
             int stillOutToday = count(connection, """
                     SELECT COUNT(*)
                     FROM pass_slips
@@ -94,7 +95,9 @@ public class DashboardJdbcRepository {
             );
 
         } finally {
-            ConnectionPoolManager.getInstance().release(connection);
+            if (connection != null) {
+                ConnectionPoolManager.getInstance().release(connection);
+            }
         }
     }
 
@@ -113,6 +116,7 @@ public class DashboardJdbcRepository {
     private List<DashboardSlipRecord> findCurrentlyOut(Connection connection) throws Exception {
         List<DashboardSlipRecord> records = new ArrayList<>();
 
+        // 🟢 CORRECTED: Only pull employees who are actively 'Out'
         String sql = """
                 SELECT
                     ps.pass_slip_id,

@@ -114,7 +114,10 @@ public class WeeklyReportExporter {
         document.close();
     }
 
-    public static void exportToCsv(File file, List<DailyActivitySummary> dailySummaries,
+    // 🟢 Added 'String weekName' to the parameters
+// REVERTED to 5 arguments: File, List, List, List, List
+    public static void exportToCsv(File file,
+                                   List<DailyActivitySummary> dailySummaries,
                                    List<ReportEmployeeSummary> employeeSummaries,
                                    List<WeeklyAwolRecord> awolRecords,
                                    List<WeeklySlipDetailRecord> slipDetails) throws Exception {
@@ -124,6 +127,7 @@ public class WeeklyReportExporter {
             writer.println("Generated on," + LocalDate.now());
             writer.println();
 
+            // --- 1. SUMMARY STATISTICS ---
             int totalSlips = slipDetails.size();
             int official = 0, personal = 0, emergency = 0, approved = 0, rejected = 0;
 
@@ -152,11 +156,68 @@ public class WeeklyReportExporter {
             writer.println(String.format("Approval Rate (%%),%.2f", approvalRate));
             writer.println("Total AWOL Employees," + awolRecords.size());
             writer.println();
-            // ... (Rest of CSV remains the same)
+
+            // --- 2. CALCULATE DAILY SUMMARY ---
+            Map<String, Integer> slipsPerDay = new HashMap<>();
+            Map<String, Integer> approvedPerDay = new HashMap<>();
+            Map<String, Integer> awolPerDay = new HashMap<>();
+
+            for (WeeklySlipDetailRecord slip : slipDetails) {
+                String day = getDayOfWeek(slip.getDateIssued());
+                slipsPerDay.put(day, slipsPerDay.getOrDefault(day, 0) + 1);
+                if (slip.getStatus() != null && slip.getStatus().toLowerCase().contains("approved")) {
+                    approvedPerDay.put(day, approvedPerDay.getOrDefault(day, 0) + 1);
+                }
+            }
+            for (WeeklyAwolRecord awol : awolRecords) {
+                String day = getDayOfWeek(awol.getDateIssued());
+                awolPerDay.put(day, awolPerDay.getOrDefault(day, 0) + 1);
+            }
+
+            writer.println("DAILY SUMMARY");
+            writer.println("Day with the most pass slips," + getHighestDay(slipsPerDay));
+            writer.println("Day with the least pass slips," + getLowestDay(slipsPerDay));
+            writer.println("Day with the most approved slips," + getHighestDay(approvedPerDay));
+            writer.println("Day with the most AWOL cases," + getHighestDay(awolPerDay));
+            writer.println();
+
+            // --- 3. AWOL LIST TABLE ---
+            writer.println("AWOL LIST");
+            if (awolRecords.isEmpty()) {
+                writer.println("No AWOL records for this period.");
+            } else {
+                writer.println("Employee ID,Employee Name,Department,Date");
+                for (WeeklyAwolRecord awol : awolRecords) {
+                    writer.println(String.format("\"%s\",\"%s\",\"%s\",\"%s\"",
+                            awol.getEmployeeId(),
+                            awol.getName(),
+                            (awol.getDepartment() != null ? awol.getDepartment() : "N/A"),
+                            awol.getDateIssued()));
+                }
+            }
+        }
+    }
+    // --- Helper Methods to calculate days ---
+
+    private static String getDayOfWeek(String dateString) {
+        if (dateString == null || dateString.isEmpty()) return "Unknown";
+        try {
+            // Assumes format like "2024-05-20" or "2024-05-20 14:30:00"
+            String justDate = dateString.split(" ")[0];
+            LocalDate date = LocalDate.parse(justDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            return date.getDayOfWeek().name().substring(0, 1).toUpperCase() + date.getDayOfWeek().name().substring(1).toLowerCase();
+        } catch (Exception e) {
+            return "Unknown";
         }
     }
 
-    private static String getDayOfWeek(String dateString) { /* Helper code remains same */ return "Day"; }
-    private static String getHighestDay(Map<String, Integer> map) { /* Helper code remains same */ return "Day"; }
-    private static String getLowestDay(Map<String, Integer> map) { /* Helper code remains same */ return "Day"; }
+    private static String getHighestDay(Map<String, Integer> map) {
+        if (map.isEmpty()) return "N/A";
+        return map.entrySet().stream().max(Map.Entry.comparingByValue()).get().getKey();
+    }
+
+    private static String getLowestDay(Map<String, Integer> map) {
+        if (map.isEmpty()) return "N/A";
+        return map.entrySet().stream().min(Map.Entry.comparingByValue()).get().getKey();
+    }
 }

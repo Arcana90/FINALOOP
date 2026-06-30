@@ -394,32 +394,20 @@
             File file = chooser.showSaveDialog(printBtn.getScene().getWindow());
 
             if (file == null) return;
-
-            try {
+            try{
                 if (currentView.equals("DAILY")) {
                     java.time.LocalDate startDate = java.time.LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
                     java.time.LocalDate endDate = startDate.plusDays(6);
+
+                    // REVERTED: Remove the 'weekName' argument. It should match the 5 arguments in your exporter method.
                     com.example.frontend_emp_pass_slip.service.WeeklyReportExporter.exportToCsv(
-                            file, reportsRepository.findWeeklyDailyActivity(startDate, endDate),
+                            file,
+                            reportsRepository.findWeeklyDailyActivity(startDate, endDate),
                             reportsRepository.getEmployeeSummariesForWeek(startDate, endDate),
                             reportsRepository.getWeeklyAwolRecords(startDate, endDate),
                             reportsRepository.getWeeklySlipDetails(startDate, endDate));
+
                     new Alert(Alert.AlertType.INFORMATION, "Weekly CSV Report generated!").showAndWait();
-
-                } else if (currentView.equals("MONTHLY") && viewDetailOption != null) {
-                    // 🟢 NEW: Month CSV Logic
-                    String monthName = viewDetailOption.replace("MONTH-", "");
-                    int monthInt = java.time.Month.valueOf(monthName.toUpperCase()).getValue();
-                    java.time.LocalDate startDate = java.time.LocalDate.of(java.time.LocalDate.now().getYear(), monthInt, 1);
-                    java.time.LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
-
-                    com.example.frontend_emp_pass_slip.service.MonthlyReportExporter.exportToCsv(
-                            file, monthName,
-                            reportsRepository.getEmployeeSummariesForWeek(startDate, endDate),
-                            reportsRepository.getWeeklyAwolRecords(startDate, endDate),
-                            reportsRepository.getWeeklySlipDetails(startDate, endDate)
-                    );
-                    new Alert(Alert.AlertType.INFORMATION, monthName + " CSV Report generated!").showAndWait();
                 } else if (currentView.equals("QUARTERLY") && viewDetailOption != null && !viewDetailOption.equals("All Quarters Summary")) {
 
                     int startMonth = 1;

@@ -130,7 +130,7 @@ public class MonthlyReportExporter {
             writer.println();
 
             int totalSlips = slipDetails.size();
-            int official = 0, personal = 0, emergency = 0, approved = 0, rejected = 0; // Added rejected
+            int official = 0, personal = 0, emergency = 0, approved = 0, rejected = 0;
 
             for (WeeklySlipDetailRecord slip : slipDetails) {
                 String type = slip.getLeaveType().toLowerCase();
@@ -140,10 +140,10 @@ public class MonthlyReportExporter {
 
                 if (slip.getStatus() != null) {
                     String stat = slip.getStatus().toLowerCase();
-                    if (stat.contains("approved") || stat.contains("returned")) {
+                    if (stat.contains("approved") || stat.contains("returned") || stat.contains("excused") || stat.contains("out")) {
                         approved++;
                     } else if (stat.contains("reject")) {
-                        rejected++; // Count rejected slips
+                        rejected++;
                     }
                 }
             }
@@ -155,7 +155,7 @@ public class MonthlyReportExporter {
             writer.println("Personal Leaves," + personal);
             writer.println("Emergency Leaves," + emergency);
             writer.println("Approved Slips," + approved);
-            writer.println("Rejected Slips," + rejected); // Added this line
+            writer.println("Rejected Slips," + rejected);
             writer.println(String.format("Approval Rate (%%),%.2f", approvalRate));
             writer.println("Total AWOL Instances," + awolRecords.size());
             writer.println();
@@ -168,12 +168,28 @@ public class MonthlyReportExporter {
             }
             writer.println();
 
+            // --- 3. EMPLOYEE SUMMARY ---
             writer.println("EMPLOYEE SUMMARY");
             ReportEmployeeSummary mostSlips = employeeSummaries.stream().max(Comparator.comparingInt(ReportEmployeeSummary::getTotalCount)).orElse(null);
             ReportEmployeeSummary mostOfficial = employeeSummaries.stream().max(Comparator.comparingInt(ReportEmployeeSummary::getOfficialCount)).orElse(null);
+            ReportEmployeeSummary mostPersonal = employeeSummaries.stream().max(Comparator.comparingInt(ReportEmployeeSummary::getPersonalCount)).orElse(null);
+            ReportEmployeeSummary mostEmergency = employeeSummaries.stream().max(Comparator.comparingInt(ReportEmployeeSummary::getEmergencyCount)).orElse(null);
 
-            writer.println("Most Pass Slips," + (mostSlips != null && mostSlips.getTotalCount() > 0 ? mostSlips.getEmployeeName() : "N/A"));
-            writer.println("Most Official Leaves," + (mostOfficial != null && mostOfficial.getOfficialCount() > 0 ? mostOfficial.getEmployeeName() : "N/A"));
+            writer.println("Most Pass Slips," + (mostSlips != null && mostSlips.getTotalCount() > 0 ? mostSlips.getEmployeeName() + " (" + mostSlips.getTotalCount() + ")" : "N/A"));
+            writer.println("Most Official Leaves," + (mostOfficial != null && mostOfficial.getOfficialCount() > 0 ? mostOfficial.getEmployeeName() + " (" + mostOfficial.getOfficialCount() + ")" : "N/A"));
+            writer.println("Most Personal Leaves," + (mostPersonal != null && mostPersonal.getPersonalCount() > 0 ? mostPersonal.getEmployeeName() + " (" + mostPersonal.getPersonalCount() + ")" : "N/A"));
+            writer.println("Most Emergency Leaves," + (mostEmergency != null && mostEmergency.getEmergencyCount() > 0 ? mostEmergency.getEmployeeName() + " (" + mostEmergency.getEmergencyCount() + ")" : "N/A"));
+            writer.println();
+
+            // --- 4. MONTHLY HIGHLIGHTS ---
+            writer.println("MONTHLY HIGHLIGHTS");
+            WeeklyBreakdownRecord maxApprovedWk = weeklyData.stream().max(Comparator.comparingInt(WeeklyBreakdownRecord::getApproved)).orElse(null);
+            WeeklyBreakdownRecord maxSlipsWk = weeklyData.stream().max(Comparator.comparingInt(WeeklyBreakdownRecord::getTotalSlips)).orElse(null);
+            WeeklyBreakdownRecord maxAwolWk = weeklyData.stream().max(Comparator.comparingInt(WeeklyBreakdownRecord::getAwol)).orElse(null);
+
+            writer.println("Week with most approved slips," + (maxApprovedWk != null && maxApprovedWk.getApproved() > 0 ? maxApprovedWk.getWeekName() : "N/A"));
+            writer.println("Week with highest number of leaves," + (maxSlipsWk != null && maxSlipsWk.getTotalSlips() > 0 ? maxSlipsWk.getWeekName() : "N/A"));
+            writer.println("Week with most AWOL cases," + (maxAwolWk != null && maxAwolWk.getAwol() > 0 ? maxAwolWk.getWeekName() : "N/A"));
         }
     }
 

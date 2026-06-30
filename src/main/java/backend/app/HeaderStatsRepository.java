@@ -12,20 +12,20 @@ public class HeaderStatsRepository {
     public int countEmployeesOut() {
         Connection connection = null;
 
-        // 🟢 Added 'date = ?' to ensure we only count people out TODAY
-// 🟢 Replace 'created_at' with your actual database column name if it differs!
+        // 🟢 FIXED: Actually added the '? 'placeholder to the SQL string!
+        // Using DATE() ensures it matches exactly today, even if the column includes time.
         String sql = """
-                SELECT COUNT(*)
-                FROM pass_slips
-                WHERE status IN ('Out', 'Excused') 
-                AND DATE(created_at) = ?
-                """;
+        SELECT COUNT(*) 
+        FROM pass_slips 
+        WHERE status = 'Out' 
+        AND DATE(date_issued) = ?
+        """;
 
         try {
             connection = ConnectionPoolManager.getInstance().acquire();
 
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                // Bind today's date to the query
+                // This now correctly binds to the '?' in the SQL above
                 statement.setDate(1, java.sql.Date.valueOf(LocalDate.now()));
 
                 try (ResultSet resultSet = statement.executeQuery()) {

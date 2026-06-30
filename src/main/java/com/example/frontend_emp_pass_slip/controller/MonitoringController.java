@@ -155,8 +155,8 @@ public class MonitoringController {
     private void updateStatistics() {
         long totalIssuedToday = records.size();
 
-        // 🟢 UPDATE: Since 'Excused' is now a finalized end-of-shift status,
-        // only active 'Out' slips represent employees currently away from the building.
+        // 🟢 CORRECTED: Count only active 'Out' statuses.
+        // Post 9 PM, this will smoothly drop to 0.
         long currentlyOutToday = records.stream()
                 .filter(r -> "Out".equalsIgnoreCase(r.getStatus()))
                 .count();
