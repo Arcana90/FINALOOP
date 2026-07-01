@@ -122,23 +122,26 @@ public class MonitoringGuardController {
                             && !record.getTimeIn().equals("-");
 
                     boolean isApproved = "Approved".equalsIgnoreCase(status);
-
-                    // 🟢 FIX: Strictly require the status to be 'Out' for the time-in button to show.
-                    // 'Excused' is a closed status and no longer requires manual guard intervention.
                     boolean isOut = "Out".equalsIgnoreCase(status);
+                    boolean isExcuse = "Excused".equalsIgnoreCase(status);
 
-                    if (isApproved) {
+                    // Get the current time and verify if it's before 9:00 PM
+                    boolean isWorkingHours = java.time.LocalTime.now(java.time.ZoneId.of("Asia/Manila"))
+                            .isBefore(java.time.LocalTime.of(21, 0));
+
+                    // Show buttons ONLY if the status is valid AND it is still working hours
+                    if (isApproved && isWorkingHours) {
                         btnOut.setVisible(true); btnOut.setManaged(true);
                         btnIn.setVisible(false); btnIn.setManaged(false);
                         setGraphic(pane);
                     }
-                    // 🟢 FIX: Only show Time In if they are strictly 'Out' and haven't been logged in yet
-                    else if (isOut && !hasTimeIn) {
+                    // 🟢 FIXED: Combined both isOut and isExcuse into one clean check
+                    else if ((isOut || isExcuse) && !hasTimeIn && isWorkingHours) {
                         btnOut.setVisible(false); btnOut.setManaged(false);
                         btnIn.setVisible(true); btnIn.setManaged(true);
                         setGraphic(pane);
                     } else {
-                        // For Returned, Cancelled, AWOL, and Excused, show nothing
+                        // For Returned, Cancelled, AWOL, OR if it's past 9 PM -> show nothing
                         setGraphic(null);
                     }
                 }
@@ -241,8 +244,17 @@ public class MonitoringGuardController {
     private void updateDashboardKPIs(List<PassSlipMonitoringRecord> records) {
         long approvedCount = records.stream().filter(r -> "Approved".equalsIgnoreCase(r.getStatus())).count();
 
-        // 🟢 FIX: Only count active 'Out' statuses, completely ignoring 'Excused'
-        long outCount = records.stream().filter(r -> "Out".equalsIgnoreCase(r.getStatus())).count();
+        // 🟢 FIXED: Check the current time!
+        boolean isWorkingHours = java.time.LocalTime.now(java.time.ZoneId.of("Asia/Manila"))
+                .isBefore(java.time.LocalTime.of(21, 0));
+
+        // If it's past 9 PM, force the Out count to 0. Otherwise, count normally.
+        long outCount = 0;
+        if (isWorkingHours) {
+            outCount = records.stream().filter(r ->
+                    "Out".equalsIgnoreCase(r.getStatus()) || "Excused".equalsIgnoreCase(r.getStatus())
+            ).count();
+        }
 
         long returnedCount = records.stream().filter(r -> "Returned".equalsIgnoreCase(r.getStatus())).count();
 

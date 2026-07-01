@@ -57,7 +57,6 @@
         @FXML private TableColumn<ReportEmployeeSummary, Integer> officialCol;
         @FXML private TableColumn<ReportEmployeeSummary, Integer> totalCol;
         @FXML private TableColumn<ReportEmployeeSummary, Void> actionCol;
-        // 🟢 ADD THIS MISSING LINE HERE:
         @FXML private TableColumn<ReportEmployeeSummary, Integer> emergencyCol;
     
     
@@ -105,10 +104,7 @@
             employeeNameCol.setCellValueFactory(new PropertyValueFactory<>("employeeName"));
             personalCol.setCellValueFactory(new PropertyValueFactory<>("personalCount"));
             officialCol.setCellValueFactory(new PropertyValueFactory<>("officialCount"));
-    
-            // 🟢 ADD THIS LINE HERE:
             emergencyCol.setCellValueFactory(new PropertyValueFactory<>("emergencyCount"));
-    
             totalCol.setCellValueFactory(new PropertyValueFactory<>("totalCount"));
     
             addButtonToTable();
@@ -197,7 +193,8 @@
             for (DailyActivitySummary s : dbData) dataMap.put(s.getDayName(), s);
             String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
             for (String day : days) {
-                DailyActivitySummary summary = dataMap.getOrDefault(day, new DailyActivitySummary(day, 0, 0, 0));            XYChart.Data<String, Number> offData = new XYChart.Data<>(day, summary.getOfficialCount());
+                DailyActivitySummary summary = dataMap.getOrDefault(day, new DailyActivitySummary(day, 0, 0, 0));
+                XYChart.Data<String, Number> offData = new XYChart.Data<>(day, summary.getOfficialCount());
                 XYChart.Data<String, Number> persData = new XYChart.Data<>(day, summary.getPersonalCount());
                 officialSeries.getData().add(offData); personalSeries.getData().add(persData);
                 Platform.runLater(() -> {
@@ -262,120 +259,146 @@
                 });
             }
         }
-
+    
         private void handleOverallExport() {
             if (currentView.equals("QUARTERLY")) {
+                // 🟢 FIXED: Removed "All Quarters Summary" from the list
                 List<String> choices = Arrays.asList(
-                        "All Quarters Summary", "Q1 (Jan, Feb, Mar)", "Q2 (Apr, May, Jun)", "Q3 (Jul, Aug, Sep)", "Q4 (Oct, Nov, Dec)"
+                        "Q1 (Jan, Feb, Mar)", "Q2 (Apr, May, Jun)", "Q3 (Jul, Aug, Sep)", "Q4 (Oct, Nov, Dec)"
                 );
-                ChoiceDialog<String> choiceDialog = new ChoiceDialog<>("All Quarters Summary", choices);
+                ChoiceDialog<String> choiceDialog = new ChoiceDialog<>("Q1 (Jan, Feb, Mar)", choices);
                 choiceDialog.setTitle("Quarterly Export");
                 choiceDialog.setHeaderText("Select the Quarter:");
                 choiceDialog.showAndWait().ifPresent(this::showFormatSelectionAlert);
             } else if (currentView.equals("MONTHLY")) {
-                // 🟢 NEW: Month selection popup
                 List<String> months = Arrays.asList("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December");
                 String currentMonth = java.time.LocalDate.now().getMonth().name().substring(0, 1) + java.time.LocalDate.now().getMonth().name().substring(1).toLowerCase();
-
+    
                 ChoiceDialog<String> choiceDialog = new ChoiceDialog<>(currentMonth, months);
                 choiceDialog.setTitle("Monthly Export");
                 choiceDialog.setHeaderText("Select the month to generate the report for:");
                 choiceDialog.showAndWait().ifPresent(selectedMonth -> showFormatSelectionAlert("MONTH-" + selectedMonth));
+            } else if (currentView.equals("DAILY")) {
+                List<String> weeks = Arrays.asList("Week 1", "Week 2", "Week 3", "Week 4");
+                ChoiceDialog<String> choiceDialog = new ChoiceDialog<>("Week 1", weeks);
+                choiceDialog.setTitle("Weekly Export");
+                choiceDialog.setHeaderText("Select which week of the current month to export:");
+                choiceDialog.showAndWait().ifPresent(selectedWeek -> showFormatSelectionAlert("WEEK-" + selectedWeek));
             } else {
                 showFormatSelectionAlert(null);
             }
         }
-
+    
         private void showFormatSelectionAlert(String viewDetailOption) {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("Export Data");
-
+    
             String headerText = "Export overall " + currentView.toLowerCase() + " statistics:";
             String defaultFileName = currentView.substring(0, 1) + currentView.substring(1).toLowerCase() + "_Overall_Report";
-
+    
             if (viewDetailOption != null) {
                 if (viewDetailOption.startsWith("MONTH-")) {
                     String month = viewDetailOption.replace("MONTH-", "");
                     headerText = "Export detailed statistics for " + month + ":";
                     defaultFileName = month + "_PassSlip_Report";
-                } else if (!viewDetailOption.equals("All Quarters Summary")) {
+                } else if (viewDetailOption.startsWith("WEEK-")) {
+                    String week = viewDetailOption.replace("WEEK-", "");
+                    headerText = "Export detailed statistics for " + week + ":";
+                    defaultFileName = week.replace(" ", "") + "_PassSlip_Report";
+                } else  {
                     headerText = "Export detailed statistics for " + viewDetailOption.substring(0, 2) + ":";
                     defaultFileName = viewDetailOption.substring(0, 2) + "_PassSlip_Report";
                 }
             }
-
+    
             alert.setHeaderText(headerText);
             alert.setContentText("Choose your output document format:");
-
+    
             ButtonType buttonPdf = new ButtonType("Save as PDF");
             ButtonType buttonCsv = new ButtonType("Export to Excel (CSV)");
             ButtonType buttonCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-
+    
             alert.getButtonTypes().setAll(buttonPdf, buttonCsv, buttonCancel);
-
+    
             final String finalFileName = defaultFileName;
             alert.showAndWait().ifPresent(type -> {
                 if (type == buttonPdf) exportOverallPdf(finalFileName, viewDetailOption);
                 else if (type == buttonCsv) exportOverallCsv(finalFileName, viewDetailOption);
             });
         }
-
+    
         private void exportOverallPdf(String defaultFileName, String viewDetailOption) {
             FileChooser chooser = new FileChooser();
             chooser.setTitle("Save PDF Report");
             chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files (*.pdf)", "*.pdf"));
             chooser.setInitialFileName(defaultFileName + ".pdf");
             File file = chooser.showSaveDialog(printBtn.getScene().getWindow());
-
+    
             if (file == null) return;
-
+    
             try {
+                // Inside exportOverallPdf() -> DAILY block
                 if (currentView.equals("DAILY")) {
-                    java.time.LocalDate startDate = java.time.LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-                    java.time.LocalDate endDate = startDate.plusDays(6);
+                    java.time.LocalDate now = java.time.LocalDate.now();
+                    java.time.LocalDate startDate;
+                    java.time.LocalDate endDate;
+                    String displayWeekName = "Current Week"; // Default
+    
+                    if (viewDetailOption != null && viewDetailOption.startsWith("WEEK-")) {
+                        String week = viewDetailOption.replace("WEEK-", "");
+                        displayWeekName = week; // e.g., "Week 1"
+                        if (week.equals("Week 1")) { startDate = now.withDayOfMonth(1); endDate = startDate.plusDays(6); }
+                        else if (week.equals("Week 2")) { startDate = now.withDayOfMonth(8); endDate = startDate.plusDays(6); }
+                        else if (week.equals("Week 3")) { startDate = now.withDayOfMonth(15); endDate = startDate.plusDays(6); }
+                        else { startDate = now.withDayOfMonth(22); endDate = now.withDayOfMonth(now.lengthOfMonth()); }
+                    } else {
+                        startDate = now.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+                        endDate = startDate.plusDays(6);
+                    }
+    
+                    // 🟢 Notice we are now passing displayWeekName as the SECOND argument!
                     com.example.frontend_emp_pass_slip.service.WeeklyReportExporter.exportToPdf(
-                            file, reportsRepository.findWeeklyDailyActivity(startDate, endDate),
+                            file,
+                            displayWeekName,
+                            reportsRepository.findWeeklyDailyActivity(startDate, endDate),
                             reportsRepository.getEmployeeSummariesForWeek(startDate, endDate),
                             reportsRepository.getWeeklyAwolRecords(startDate, endDate),
                             reportsRepository.getWeeklySlipDetails(startDate, endDate));
-                    new Alert(Alert.AlertType.INFORMATION, "Weekly PDF Report generated!").showAndWait();
-
+    
+                    new Alert(Alert.AlertType.INFORMATION, displayWeekName + " PDF Report generated!").showAndWait();
                 } else if (currentView.equals("MONTHLY") && viewDetailOption != null) {
-                    // 🟢 NEW: Extract month and calculate Start/End dates for the repository methods
                     String monthName = viewDetailOption.replace("MONTH-", "");
                     int monthInt = java.time.Month.valueOf(monthName.toUpperCase()).getValue();
                     java.time.LocalDate startDate = java.time.LocalDate.of(java.time.LocalDate.now().getYear(), monthInt, 1);
                     java.time.LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
-
+    
                     com.example.frontend_emp_pass_slip.service.MonthlyReportExporter.exportToPdf(
                             file, monthName,
-                            reportsRepository.getEmployeeSummariesForWeek(startDate, endDate), // Reusing date-range query!
-                            reportsRepository.getWeeklyAwolRecords(startDate, endDate),        // Reusing date-range query!
-                            reportsRepository.getWeeklySlipDetails(startDate, endDate)         // Reusing date-range query!
+                            reportsRepository.getEmployeeSummariesForWeek(startDate, endDate),
+                            reportsRepository.getWeeklyAwolRecords(startDate, endDate),
+                            reportsRepository.getWeeklySlipDetails(startDate, endDate)
                     );
                     new Alert(Alert.AlertType.INFORMATION, monthName + " PDF Report generated!").showAndWait();
                 } else if (currentView.equals("QUARTERLY") && viewDetailOption != null && !viewDetailOption.equals("All Quarters Summary")) {
-
                     int startMonth = 1;
                     int endMonth = 3;
-
+    
                     if (viewDetailOption.startsWith("Q2")) { startMonth = 4; endMonth = 6; }
                     else if (viewDetailOption.startsWith("Q3")) { startMonth = 7; endMonth = 9; }
                     else if (viewDetailOption.startsWith("Q4")) { startMonth = 10; endMonth = 12; }
-
+    
                     int currentYear = java.time.LocalDate.now().getYear();
                     java.time.LocalDate startDate = java.time.LocalDate.of(currentYear, startMonth, 1);
                     java.time.LocalDate endDate = java.time.LocalDate.of(currentYear, endMonth,
                             java.time.LocalDate.of(currentYear, endMonth, 1).lengthOfMonth());
-
-                    // 🟢 PDF EXPORT CALL
+    
                     com.example.frontend_emp_pass_slip.service.QuarterlyReportExporter.exportToPdf(
                             file, viewDetailOption, startMonth,
                             reportsRepository.getEmployeeSummariesForWeek(startDate, endDate),
                             reportsRepository.getWeeklyAwolRecords(startDate, endDate),
                             reportsRepository.getWeeklySlipDetails(startDate, endDate)
                     );
-
+    
                     new Alert(Alert.AlertType.INFORMATION, viewDetailOption + " PDF Report generated!").showAndWait();
                 }
             } catch (java.io.FileNotFoundException e) {
@@ -394,22 +417,53 @@
             File file = chooser.showSaveDialog(printBtn.getScene().getWindow());
 
             if (file == null) return;
-            try{
+            try {
                 if (currentView.equals("DAILY")) {
-                    java.time.LocalDate startDate = java.time.LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-                    java.time.LocalDate endDate = startDate.plusDays(6);
+                    java.time.LocalDate now = java.time.LocalDate.now();
+                    java.time.LocalDate startDate;
+                    java.time.LocalDate endDate;
+                    String displayWeekName = "Current Week";
 
-                    // REVERTED: Remove the 'weekName' argument. It should match the 5 arguments in your exporter method.
+                    if (viewDetailOption != null && viewDetailOption.startsWith("WEEK-")) {
+                        String week = viewDetailOption.replace("WEEK-", "");
+                        displayWeekName = week;
+                        if (week.equals("Week 1")) { startDate = now.withDayOfMonth(1); endDate = startDate.plusDays(6); }
+                        else if (week.equals("Week 2")) { startDate = now.withDayOfMonth(8); endDate = startDate.plusDays(6); }
+                        else if (week.equals("Week 3")) { startDate = now.withDayOfMonth(15); endDate = startDate.plusDays(6); }
+                        else { startDate = now.withDayOfMonth(22); endDate = now.withDayOfMonth(now.lengthOfMonth()); }
+                    } else {
+                        startDate = now.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+                        endDate = startDate.plusDays(6);
+                    }
+
                     com.example.frontend_emp_pass_slip.service.WeeklyReportExporter.exportToCsv(
                             file,
+                            displayWeekName,
                             reportsRepository.findWeeklyDailyActivity(startDate, endDate),
                             reportsRepository.getEmployeeSummariesForWeek(startDate, endDate),
                             reportsRepository.getWeeklyAwolRecords(startDate, endDate),
                             reportsRepository.getWeeklySlipDetails(startDate, endDate));
 
-                    new Alert(Alert.AlertType.INFORMATION, "Weekly CSV Report generated!").showAndWait();
-                } else if (currentView.equals("QUARTERLY") && viewDetailOption != null && !viewDetailOption.equals("All Quarters Summary")) {
+                    new Alert(Alert.AlertType.INFORMATION, displayWeekName + " CSV Report generated!").showAndWait();
 
+                }
+                // 🟢 HERE IS THE MISSING MONTHLY BLOCK FOR CSV 🟢
+                else if (currentView.equals("MONTHLY") && viewDetailOption != null) {
+                    String monthName = viewDetailOption.replace("MONTH-", "");
+                    int monthInt = java.time.Month.valueOf(monthName.toUpperCase()).getValue();
+                    java.time.LocalDate startDate = java.time.LocalDate.of(java.time.LocalDate.now().getYear(), monthInt, 1);
+                    java.time.LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+                    com.example.frontend_emp_pass_slip.service.MonthlyReportExporter.exportToCsv(
+                            file, monthName,
+                            reportsRepository.getEmployeeSummariesForWeek(startDate, endDate),
+                            reportsRepository.getWeeklyAwolRecords(startDate, endDate),
+                            reportsRepository.getWeeklySlipDetails(startDate, endDate)
+                    );
+                    new Alert(Alert.AlertType.INFORMATION, monthName + " CSV Report generated!").showAndWait();
+                }
+                // 🟢 QUARTERLY BLOCK CONTINUES HERE 🟢
+                else if (currentView.equals("QUARTERLY") && viewDetailOption != null && !viewDetailOption.equals("All Quarters Summary")) {
                     int startMonth = 1;
                     int endMonth = 3;
 
@@ -422,7 +476,6 @@
                     java.time.LocalDate endDate = java.time.LocalDate.of(currentYear, endMonth,
                             java.time.LocalDate.of(currentYear, endMonth, 1).lengthOfMonth());
 
-                    // 🟢 CSV EXPORT CALL
                     com.example.frontend_emp_pass_slip.service.QuarterlyReportExporter.exportToCsv(
                             file, viewDetailOption, startMonth,
                             reportsRepository.getEmployeeSummariesForWeek(startDate, endDate),
@@ -440,6 +493,7 @@
                 new Alert(Alert.AlertType.ERROR, "Failed to compile the CSV report.").showAndWait();
             }
         }
+    
         private void handleIndividualExport(ReportEmployeeSummary employee) {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("Export Individual Report");
@@ -592,7 +646,6 @@
                 return "";
             }
             try {
-                // Extracts time block cleanly if database appends a full date component
                 if (rawTime.contains(" ")) {
                     rawTime = rawTime.split(" ")[1];
                 }

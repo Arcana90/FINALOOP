@@ -1,4 +1,5 @@
 package com.example.frontend_emp_pass_slip.controller;
+
 import javafx.application.Platform;
 import java.util.concurrent.CompletableFuture;
 import backend.app.AppSettingsManager;
@@ -88,11 +89,6 @@ public class LoginController {
                     break;
             }
         }
-    }
-
-    @FXML
-    private void handleForgotPassword() {
-        System.out.println("Forgot password link clicked!");
     }
 
     @FXML

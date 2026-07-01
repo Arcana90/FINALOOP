@@ -8,24 +8,21 @@ import java.sql.ResultSet;
 import java.time.LocalDate;
 
 public class HeaderStatsRepository {
-
     public int countEmployeesOut() {
         Connection connection = null;
 
-        // 🟢 FIXED: Actually added the '? 'placeholder to the SQL string!
-        // Using DATE() ensures it matches exactly today, even if the column includes time.
         String sql = """
         SELECT COUNT(*) 
         FROM pass_slips 
-        WHERE status = 'Out' 
+        WHERE (status = 'Out' OR status = 'Excused')
         AND DATE(date_issued) = ?
+        AND (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time < '21:00:00'
         """;
 
         try {
             connection = ConnectionPoolManager.getInstance().acquire();
 
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                // This now correctly binds to the '?' in the SQL above
                 statement.setDate(1, java.sql.Date.valueOf(LocalDate.now()));
 
                 try (ResultSet resultSet = statement.executeQuery()) {

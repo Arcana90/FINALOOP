@@ -152,13 +152,13 @@ public class MonitoringController {
         updateStatistics();
     }
 
+    // Inside MonitoringController.java
     private void updateStatistics() {
         long totalIssuedToday = records.size();
 
-        // 🟢 CORRECTED: Count only active 'Out' statuses.
-        // Post 9 PM, this will smoothly drop to 0.
+        // 🟢 FIXED: Count both Out and Excused
         long currentlyOutToday = records.stream()
-                .filter(r -> "Out".equalsIgnoreCase(r.getStatus()))
+                .filter(r -> "Out".equalsIgnoreCase(r.getStatus()) || "Excused".equalsIgnoreCase(r.getStatus()))
                 .count();
 
         long returnedToday = records.stream().filter(r -> "Returned".equalsIgnoreCase(r.getStatus())).count();

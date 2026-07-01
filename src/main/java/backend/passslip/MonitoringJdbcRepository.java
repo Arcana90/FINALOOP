@@ -18,26 +18,36 @@
                 List<PassSlipMonitoringRecord> records = new ArrayList<>();
                 // ... rest of your code
             Connection connection = null;
-    
+
             String sql = """
-            SELECT 
-                ps.pass_slip_id,
-                ps.employee_id,
-                e.first_name || ' ' || e.last_name AS employee_name,
-                e.department,
-                ps.reason_for_leaving,
-                ps.date_issued,
-                ps.time_requested,  
-                ps.expected_time_out,
-                ps.expected_time_in,
-                ps.time_out,        
-                ps.time_in,
-                ps.duration_minutes,
-                ps.status::text AS status
-            FROM pass_slips ps
-            JOIN employees e ON ps.employee_id = e.employee_id
-            ORDER BY ps.pass_slip_id DESC
-            """;
+        SELECT 
+            ps.pass_slip_id,
+            ps.employee_id,
+            e.first_name || ' ' || e.last_name AS employee_name,
+            e.department,
+            ps.reason_for_leaving,
+            ps.date_issued,
+            ps.time_requested,  
+            ps.expected_time_out,
+            ps.expected_time_in,
+            ps.time_out,        
+            ps.time_in,
+            ps.duration_minutes,
+            ps.status::text AS status
+        FROM pass_slips ps
+        JOIN employees e ON ps.employee_id = e.employee_id
+        WHERE (
+            -- If it's before 9 PM, show everything
+            (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::time < '21:00:00'
+            OR 
+            -- If it's after 9 PM, only show statuses that aren't 'Out' or 'Excused'
+            ps.status NOT IN ('Out', 'Excused')
+            OR
+            -- Still show yesterday's data or older data if needed
+            ps.date_issued < CURRENT_DATE
+        )
+        ORDER BY ps.pass_slip_id DESC
+        """;
     
             try {
                 connection = ConnectionPoolManager.getInstance().acquire();

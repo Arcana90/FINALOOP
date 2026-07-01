@@ -16,7 +16,6 @@
         <URL value="@../css/style.css" />
     </stylesheets>
 
-    <!-- Decorative Background Elements -->
     <Pane styleClass="login-bg-circle-top-left"
           StackPane.alignment="TOP_LEFT" />
 
@@ -25,7 +24,6 @@
 
     <VBox alignment="CENTER" spacing="20" maxWidth="450">
 
-        <!-- Header / Logo Section -->
         <VBox alignment="CENTER" spacing="8">
             <StackPane styleClass="pup-logo-circle">
                 <ImageView fitWidth="78" fitHeight="78" preserveRatio="true" smooth="true">
@@ -39,21 +37,17 @@
             <Label text="Employee Issuance &amp; Monitoring" styleClass="figma-login-subtitle" />
         </VBox>
 
-        <!-- Main Landing / Login Card -->
         <VBox fx:id="loginCard" styleClass="figma-login-card" spacing="16" maxWidth="410">
             <padding>
                 <Insets top="28" right="32" bottom="28" left="32" />
             </padding>
 
             <VBox spacing="3">
-                <!-- ADDED fx:id="welcomePortalLabel" -->
                 <Label fx:id="welcomePortalLabel" text="Welcome Portal" styleClass="figma-card-title" />
                 <Label fx:id="roleSubtitleLabel" text="Sign in to your administrator account" styleClass="figma-card-subtitle" />
             </VBox>
 
-            <!-- Updated Role Selection Controls -->
             <VBox spacing="6">
-                <!-- ADDED fx:id="selectPortalLabel" -->
                 <Label fx:id="selectPortalLabel" text="Select Portal *" styleClass="figma-field-label" />
                 <HBox spacing="8" alignment="CENTER" maxWidth="Infinity">
                     <fx:define>
@@ -78,9 +72,7 @@
                 </HBox>
             </VBox>
 
-            <!-- Input Fields -->
             <VBox spacing="6">
-                <!-- ADDED fx:id="usernameLabel" -->
                 <Label fx:id="usernameLabel" text="Username *" styleClass="figma-field-label" />
                 <TextField fx:id="usernameField"
                            promptText="Enter your username"
@@ -89,26 +81,17 @@
             </VBox>
 
             <VBox spacing="6">
-                <HBox alignment="CENTER_LEFT">
-                    <!-- ADDED fx:id="passwordLabel" -->
-                    <Label fx:id="passwordLabel" text="Password *" styleClass="figma-field-label" />
-                    <Pane HBox.hgrow="ALWAYS" />
-                    <Hyperlink text="Forgot Password?"
-                               onAction="#handleForgotPassword"
-                               styleClass="forgot-password-link" />
-                </HBox>
+                <Label fx:id="passwordLabel" text="Password *" styleClass="figma-field-label" />
                 <PasswordField fx:id="passwordField"
                                promptText="Enter your password"
                                onAction="#login"
                                prefHeight="38" />
             </VBox>
 
-            <!-- Status Label for Error Messages -->
             <Label fx:id="statusLabel"
                    wrapText="true"
                    styleClass="error-label" />
 
-            <!-- Action Button -->
             <Button fx:id="loginButton"
                     text="Sign In"
                     maxWidth="Infinity"
@@ -116,14 +99,12 @@
                     onAction="#login"
                     styleClass="figma-login-button" />
 
-            <!-- Footer Hyperlinks inside Card -->
             <HBox alignment="CENTER" spacing="40">
                 <Hyperlink text="Terms and Conditions" onAction="#handleTerms" styleClass="footer-card-link" />
                 <Hyperlink text="Privacy and Policy" onAction="#handlePrivacy" styleClass="footer-card-link" />
             </HBox>
         </VBox>
 
-        <!-- System Footer -->
         <Label text="© 2026 University Administration Portal" styleClass="figma-footer-text" />
 
     </VBox>
